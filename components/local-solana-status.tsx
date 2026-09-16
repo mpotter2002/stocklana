@@ -3,7 +3,6 @@
 import {
   CircleAlert,
   CircleCheck,
-  LoaderCircle,
   RefreshCw,
   Wallet,
 } from "lucide-react";
@@ -19,6 +18,15 @@ import {
   shortPublicKey,
   type InjectedSolanaWallet,
 } from "../lib/solana/injected-wallet";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Spinner } from "@/components/ui/spinner";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { cn } from "@/lib/utils";
 
 type WalletStatus =
   | { state: "missing" }
@@ -161,69 +169,66 @@ export function LocalSolanaStatus({
         : "Unchecked";
 
   return (
-    <section className="border-b border-black/10 bg-[#edf2f0]">
-      <div className="mx-auto flex max-w-[1440px] flex-col gap-4 px-5 py-4 md:px-8 lg:flex-row lg:items-center lg:justify-between">
-        <div className="grid flex-1 grid-cols-1 gap-3 sm:grid-cols-3">
-          <StatusItem
-            label="Local validator"
-            state={
-              checking
-                ? "checking"
-                : runtime.validator === "online"
-                  ? "ok"
-                  : "warn"
-            }
-            value={validatorValue}
-          />
-          <StatusItem
-            label="Basket program"
-            state={
-              checking ? "checking" : runtime.programDeployed ? "ok" : "warn"
-            }
-            value={programValue}
-          />
-          <StatusItem
-            label="Browser wallet"
-            state={
-              wallet.state === "connected"
-                ? "ok"
-                : wallet.state === "connecting"
-                  ? "checking"
-                  : "warn"
-            }
-            value={walletLabel(wallet)}
-          />
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          {walletError ? <p role="alert" className="text-xs text-[var(--red)]">{walletError}</p> : null}
-          {wallet.state !== "missing" ? (
-            <button
-              className="inline-flex h-9 items-center gap-2 rounded-[6px] border border-black/15 bg-white px-3 text-sm font-medium hover:bg-black/5 disabled:cursor-wait"
-              disabled={wallet.state === "connecting"}
-              onClick={() => void toggleWallet()}
-              type="button"
-            >
-              <Wallet size={15} aria-hidden="true" />
-              {wallet.state === "connected" ? "Disconnect" : "Connect wallet"}
-            </button>
-          ) : null}
-          <button
+    <div className="flex flex-wrap items-center justify-end gap-2">
+      <Badge variant="outline">LOCAL TEST</Badge>
+      <StatusChip
+        label="Validator"
+        state={checking ? "checking" : runtime.validator === "online" ? "ok" : "warn"}
+        value={validatorValue}
+      />
+      <StatusChip
+        label="Program"
+        state={checking ? "checking" : runtime.programDeployed ? "ok" : "warn"}
+        value={programValue}
+      />
+      <StatusChip
+        label="Wallet"
+        state={
+          wallet.state === "connected"
+            ? "ok"
+            : wallet.state === "connecting"
+              ? "checking"
+              : "warn"
+        }
+        value={walletLabel(wallet)}
+      />
+      {walletError ? <p role="alert" className="text-xs text-destructive">{walletError}</p> : null}
+      {wallet.state !== "missing" ? (
+        <Button
+          disabled={wallet.state === "connecting"}
+          onClick={() => void toggleWallet()}
+          size="sm"
+          type="button"
+          variant={wallet.state === "connected" ? "outline" : "default"}
+        >
+          {wallet.state === "connecting" ? (
+            <Spinner data-icon="inline-start" />
+          ) : (
+            <Wallet data-icon="inline-start" />
+          )}
+          {wallet.state === "connected" ? "Disconnect" : "Connect wallet"}
+        </Button>
+      ) : null}
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
             aria-label="Refresh local connection"
-            className="grid size-9 place-items-center rounded-[6px] border border-black/15 bg-white hover:bg-black/5 disabled:cursor-wait"
             disabled={checking}
             onClick={() => void refresh()}
-            title="Refresh local connection"
+            size="icon-sm"
             type="button"
+            variant="outline"
           >
-            <RefreshCw className={checking ? "animate-spin" : ""} size={15} />
-          </button>
-        </div>
-      </div>
-    </section>
+            <RefreshCw className={checking ? "animate-spin" : undefined} />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>Refresh local connection</TooltipContent>
+      </Tooltip>
+    </div>
   );
 }
 
-function StatusItem({
+function StatusChip({
   label,
   value,
   state,
@@ -232,29 +237,22 @@ function StatusItem({
   value: string;
   state: "ok" | "warn" | "checking";
 }) {
-  const Icon =
-    state === "ok"
-      ? CircleCheck
-      : state === "checking"
-        ? LoaderCircle
-        : CircleAlert;
+  const Icon = state === "ok" ? CircleCheck : state === "checking" ? Spinner : CircleAlert;
   return (
-    <div className="flex min-w-0 items-center gap-2">
+    <div className="flex min-w-0 items-center gap-1.5 rounded-md border border-border bg-card px-2 py-1">
       <Icon
-        className={
-          state === "ok"
-            ? "text-[var(--green)]"
-            : state === "checking"
-              ? "animate-spin text-[var(--blue)]"
-              : "text-[var(--red)]"
-        }
-        size={16}
+        className={cn(
+          "size-3.5",
+          state === "ok" && "text-success",
+          state === "checking" && "text-muted-foreground",
+          state === "warn" && "text-destructive",
+        )}
       />
       <div className="min-w-0">
-        <p className="text-[11px] font-semibold uppercase text-[var(--muted)]">
+        <p className="text-[10px] font-medium tracking-[0.14em] text-muted-foreground uppercase">
           {label}
         </p>
-        <p className="truncate text-xs font-medium">{value}</p>
+        <p className="max-w-40 truncate font-mono text-[11px]">{value}</p>
       </div>
     </div>
   );
