@@ -171,17 +171,17 @@ export function LocalSolanaStatus({
   return (
     <div className="flex flex-wrap items-center justify-end gap-2">
       <Badge variant="outline">LOCAL TEST</Badge>
-      <div className="flex flex-wrap items-center gap-2">
-        <StatusChip
-          label="Validator"
-          state={checking ? "checking" : runtime.validator === "online" ? "ok" : "warn"}
-          value={validatorValue}
-        />
-        <StatusChip
-          label="Program"
-          state={checking ? "checking" : runtime.programDeployed ? "ok" : "warn"}
-          value={programValue}
-        />
+      <StatusChip
+        label="Validator"
+        state={checking ? "checking" : runtime.validator === "online" ? "ok" : "warn"}
+        value={validatorValue}
+      />
+      <StatusChip
+        label="Program"
+        state={checking ? "checking" : runtime.programDeployed ? "ok" : "warn"}
+        value={programValue}
+      />
+      <div className="flex items-center gap-2">
         <StatusChip
           label="Wallet"
           state={
@@ -193,8 +193,6 @@ export function LocalSolanaStatus({
           }
           value={walletLabel(wallet)}
         />
-      </div>
-      <div className="flex items-center gap-2">
         {walletError ? <p role="alert" className="text-xs text-destructive">{walletError}</p> : null}
         {wallet.state !== "missing" ? (
           <Button
