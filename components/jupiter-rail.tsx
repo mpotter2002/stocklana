@@ -169,7 +169,7 @@ export function JupiterRail({
           local-testing fallback. Backpack is used only if Jupiter is blocked,
           and those rows are venue symbols without Solana mints.
         </p>
-        <p className="text-xs leading-5 text-[var(--muted)]">
+        <p className="text-xs leading-5 break-words text-[var(--muted)]">
           {catalog?.detail ?? catalogError ?? (loading ? "Loading Jupiter inventory…" : "")}
         </p>
         <p className="text-xs leading-5 text-[var(--muted)]">
