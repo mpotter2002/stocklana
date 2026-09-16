@@ -1,0 +1,35 @@
+@import "tailwindcss";
+
+:root {
+  --canvas: #f7f8f5;
+  --ink: #171b19;
+  --muted: #68716c;
+  --green: #2f6f58;
+  --blue: #3d68a0;
+  --red: #b54f3b;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  background: var(--canvas);
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-sans), Arial, sans-serif;
+  letter-spacing: 0;
+}
+
+button,
+input {
+  font: inherit;
+}
+
+button:focus-visible,
+input:focus-visible {
+  outline: 2px solid var(--blue);
+  outline-offset: 2px;
+}

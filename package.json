@@ -1,0 +1,37 @@
+{
+  "name": "stocklana",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "idl:sync": "cp target/idl/basket.json lib/solana/idl/basket.json",
+    "idl:check": "cmp -s target/idl/basket.json lib/solana/idl/basket.json",
+    "test": "node --test tests/*.test.ts",
+    "test:integration": "node --test tests/integration/*.test.ts",
+    "typecheck": "tsc --noEmit",
+    "check": "npm run typecheck && npm test"
+  },
+  "devDependencies": {
+    "@solana/spl-token": "0.4.14",
+    "@tailwindcss/postcss": "4.3.3",
+    "@types/node": "24.13.4",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "tailwindcss": "4.3.3",
+    "typescript": "7.0.2"
+  },
+  "dependencies": {
+    "@coral-xyz/anchor": "0.32.1",
+    "@solana/web3.js": "1.98.4",
+    "lucide-react": "1.46.0",
+    "next": "16.3.5",
+    "react": "19.3.0",
+    "react-dom": "19.3.0"
+  }
+}

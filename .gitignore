@@ -1,0 +1,13 @@
+node_modules/
+target/
+.next/
+.anchor/
+coverage/
+.env*
+!.env.example
+.DS_Store
+test-ledger/
+*-keypair.json
+.playwright-cli/
+output/playwright/
+*.tsbuildinfo
