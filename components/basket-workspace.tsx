@@ -818,11 +818,11 @@ function ReferenceQuotes({
         {LocalTestFeedMap.BINDINGS.map((row) => {
           const quote = quotes.find((item) => item.feedId === row.feed.id);
           return (
-            <li className="flex justify-between gap-3" key={row.localSymbol}>
-              <span className="min-w-0 truncate">
+            <li className="flex flex-col gap-0.5 sm:flex-row sm:justify-between sm:gap-3" key={row.localSymbol}>
+              <span className="min-w-0 break-all">
                 {row.localSymbol} → {row.feed.pythSymbol}
               </span>
-              <span className="shrink-0">
+              <span className="sm:shrink-0 sm:text-right">
                 {quote
                   ? BasketValuation.formatUnitPrice(quote)
                   : loading
