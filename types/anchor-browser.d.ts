@@ -1,3 +1,9 @@
 declare module "@coral-xyz/anchor/dist/browser/index.js" {
-  export { BorshAccountsCoder } from "@coral-xyz/anchor";
+  export {
+    AnchorError,
+    BN,
+    BorshAccountsCoder,
+    BorshInstructionCoder,
+    ProgramError,
+  } from "@coral-xyz/anchor";
 }

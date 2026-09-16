@@ -29,6 +29,15 @@ export function getInjectedSolanaWallet(): InjectedSolanaWallet | null {
   return wallet && typeof wallet.connect === "function" ? wallet : null;
 }
 
+export function asPublicKey(
+  value: PublicKey | { toBase58(): string } | string | null | undefined,
+): PublicKey | null {
+  if (!value) return null;
+  if (value instanceof PublicKey) return value;
+  if (typeof value === "string") return new PublicKey(value);
+  return new PublicKey(value.toBase58());
+}
+
 export function shortPublicKey(publicKey: PublicKey): string {
   const value = publicKey.toBase58();
   return `${value.slice(0, 4)}...${value.slice(-4)}`;

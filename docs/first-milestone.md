@@ -17,14 +17,19 @@
 - Local-validator coverage for classic SPL and plain Token-2022 test mints.
 - Rejection coverage for cross-owner withdrawal, destination substitution,
   and a mint outside the stored recipe.
-- A responsive local-fixture UI that demonstrates basket preparation,
-  sequential execution, failed-leg recovery, retry, and in-kind exit.
+- A responsive local UI for selecting two or three test assets and showing
+  confirmed basket custody after wallet submission.
 - Exact owner/basket PDA derivation and Anchor account decoding from the
   committed browser IDL.
 - `bigint`-safe normalization of basket IDs, operation nonces, slots, budgets,
   and minimum outputs.
 - Browser-visible checks for the local validator and deployed basket program.
 - Injected-wallet discovery, connection, disconnection, and account changes.
+- Typed local instruction builders for create, deposit, start, finish, exit,
+  and withdraw. The public client does not build mock-swap legs.
+- Local-only wallet sign/send/confirm, with chain state re-read after
+  confirmation. Wallet rejection, blockhash expiry, and program errors are
+  surfaced in the UI.
 
 The onchain nonce and completed-leg state provide replay protection. The
 TypeScript recovery helper remains a presentation/client decision aid and is
@@ -32,11 +37,11 @@ not a substitute for those program checks.
 
 ## Current Boundary
 
-- The UI is a stateful local simulation and is not connected to a browser
-  wallet for transaction submission or transaction confirmation.
+- Browser transactions are enabled only against the local validator.
 - The mock-swap adapter is a test fixture, not a market venue or production
-  dependency.
-- Displayed assets, prices, balances, fills, and wallet identity are fixtures.
+  dependency, and is not exposed in the public instruction client.
+- Local test mints and USDCt balances are labeled test assets. There is no
+  live valuation; portfolio value is shown as not priced.
 - Default basket builds now exclude `local-testing`; only explicitly opted-in
   local builds contain mock execution. Follow the commands in README.md.
 - Creation now requires remaining accounts in exact order: funding mint, then
@@ -48,32 +53,26 @@ not a substitute for those program checks.
 - Empty custody accounts can be closed. Accounts with extensions other than
   ImmutableOwner are left open after transfer for separate rent cleanup.
 
-## Next: Client and Jupiter Integration
+## Next: Jupiter Integration
 
-1. Add typed instruction builders for create, deposit, start, finish, exit, and
-   withdraw without exposing the mock adapter in a public client.
-2. Connect wallet signatures and confirmations only to the local validator.
-3. Drive the UI from
-   confirmed onchain state rather than optimistic UI state.
-4. Add wallet rejection, blockhash expiry, program error, and refresh/recovery
-   states before replacing the fixture execution controls.
-5. Prove one Jupiter `/build` CPI round trip under a permitted test setup using
+1. Prove one Jupiter `/build` CPI round trip under a permitted test setup using
    actual response schemas and tightly constrained privileged accounts.
-6. Keep mock-swap evidence separate from Jupiter integration evidence, and do
+2. Keep mock-swap evidence separate from Jupiter integration evidence, and do
    not assume a live devnet xStocks market exists.
+3. Add Pyth valuation after the local transaction path is reviewed.
+4. Add PreStocks/Tessera recipe options after valuation.
 
-The browser transaction runner can now be started because nonce and leg
-validation have local integration coverage. It should remain local-only until
-wallet prompts, confirmation states, transaction failure recovery, and issuer
-eligibility messaging are tested.
+Local create, deposit, withdraw, and in-kind exit can now be signed in the
+browser against a local validator. Mock-leg execution and Jupiter remain out
+of the public client.
 
 ## Acceptance
 
 An owner can deposit local SPL or plain Token-2022 fixtures, execute a
 recoverable multi-leg operation, retry a failed leg or supersede the operation,
 and fully withdraw the resulting holdings. Another owner cannot move the funds
-or substitute a destination. Jupiter buy/sell acceptance and browser-driven
-transactions remain outstanding.
+or substitute a destination. Browser-driven create/deposit/withdraw against
+localnet is in place. Jupiter buy/sell acceptance remains outstanding.
 
 ## Design References
 

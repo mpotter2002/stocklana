@@ -31,9 +31,8 @@ client's camelCase fields and lowercase phase union.
 
 ## Deliberate Boundaries
 
-- UI basket execution remains a fixture simulation.
-- Browser wallet discovery and connection exist, but no transaction is built,
-  signed, submitted, or confirmed.
+- Browser create/deposit/withdraw/exit submit only to the local validator.
+- The public instruction client does not build mock-swap legs.
 - No Jupiter request or CPI path exists yet.
 - No mainnet/devnet deployment or live asset address is configured.
 - The mock-swap program remains local-only.
@@ -56,9 +55,7 @@ client's camelCase fields and lowercase phase union.
 ## Suggested Next Review
 
 1. Review onchain authorization, nonce transitions, and account constraints.
-2. Review the browser IDL boundary and dependency advisories.
-3. Add typed instruction builders and transaction confirmation state for
-   localnet only.
-4. Replace fixture UI state incrementally with refreshed onchain snapshots.
-5. Keep Jupiter and public-network work blocked until local wallet rejection,
-   expiry, retry, and recovery paths are proven.
+2. Review the browser IDL boundary, instruction builders, and local-only
+   transaction runner.
+3. Keep Jupiter and public-network work blocked until a local wallet create,
+   deposit, and withdraw path is proven on a persistent validator.
