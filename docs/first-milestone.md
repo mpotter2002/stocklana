@@ -30,6 +30,8 @@
 - Local-only wallet sign/send/confirm, with chain state re-read after
   confirmation. Wallet rejection, blockhash expiry, and program errors are
   surfaced in the UI.
+- Off-chain Pyth valuation for local test holdings. Hermes when a key is
+  configured; otherwise labeled hermetic Pyth-format quotes.
 
 The onchain nonce and completed-leg state provide replay protection. The
 TypeScript recovery helper remains a presentation/client decision aid and is
@@ -40,8 +42,9 @@ not a substitute for those program checks.
 - Browser transactions are enabled only against the local validator.
 - The mock-swap adapter is a test fixture, not a market venue or production
   dependency, and is not exposed in the public instruction client.
-- Local test mints and USDCt balances are labeled test assets. There is no
-  live valuation; portfolio value is shown as not priced.
+- Local test mints and USDCt balances are labeled test assets. Basket
+  valuation uses Pyth quotes (Hermes or labeled local-test). Unmapped mints
+  stay not priced; a missing feed is never filled with fixture dollars.
 - Default basket builds now exclude `local-testing`; only explicitly opted-in
   local builds contain mock execution. Follow the commands in README.md.
 - Creation now requires remaining accounts in exact order: funding mint, then
@@ -59,12 +62,12 @@ not a substitute for those program checks.
    actual response schemas and tightly constrained privileged accounts.
 2. Keep mock-swap evidence separate from Jupiter integration evidence, and do
    not assume a live devnet xStocks market exists.
-3. Add Pyth valuation after the local transaction path is reviewed.
-4. Add PreStocks/Tessera recipe options after valuation.
+3. Add PreStocks/Tessera recipe options after a live-asset eligibility review.
 
 Local create, deposit, withdraw, and in-kind exit can now be signed in the
 browser against a local validator. Mock-leg execution and Jupiter remain out
-of the public client.
+of the public client. Pyth valuation is display-only and independent of
+in-kind recovery.
 
 ## Acceptance
 
@@ -79,4 +82,5 @@ localnet is in place. Jupiter buy/sell acceptance remains outstanding.
 - Plan: ../Stocklana-Custom-Baskets-Plan.md relative to repository root.
 - Anchor: https://www.anchor-lang.com/docs
 - Jupiter: https://developers.jup.ag/docs/swap
+- Pyth Hermes: https://docs.pyth.network/price-feeds/core/fetch-price-updates
 - Token amounts: https://solana.com/docs/tokens/extensions/scaled-ui-amount

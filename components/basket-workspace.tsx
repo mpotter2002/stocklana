@@ -43,6 +43,11 @@ import {
   LocalTransactionRunner,
   describeLocalTransactionError,
 } from "../lib/solana/local-transaction";
+import { PythQuoteClient } from "../lib/pyth/quote-client.ts";
+import { LocalTestFeedMap } from "../lib/pyth/local-test-map.ts";
+import type { PythQuote } from "../lib/pyth/quote.ts";
+import type { PythQuoteSet } from "../lib/pyth/quote-service.ts";
+import { BasketValuation, type BasketValuationSnapshot } from "../lib/pyth/valuation.ts";
 import { LocalSolanaStatus } from "./local-solana-status";
 
 const UNKNOWN_RUNTIME: LocalRuntimeStatus = {
@@ -69,6 +74,8 @@ export function BasketWorkspace() {
   const [amount, setAmount] = useState("25");
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<ChainNotice | null>(null);
+  const [quoteSet, setQuoteSet] = useState<PythQuoteSet | null>(null);
+  const [quotesLoading, setQuotesLoading] = useState(true);
   const handleOwnerChange = useCallback((next: PublicKey | null) => {
     setOwner((current) => {
       if (current && next && current.equals(next)) return current;
@@ -115,6 +122,26 @@ export function BasketWorkspace() {
       });
     });
   }, [owner, refreshChain]);
+
+  const refreshQuotes = useCallback(async () => {
+    setQuotesLoading(true);
+    try {
+      const next = await PythQuoteClient.latest(LocalTestFeedMap.requiredFeedIds());
+      setQuoteSet(next);
+    } catch {
+      setQuoteSet(null);
+    } finally {
+      setQuotesLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void refreshQuotes();
+    const timer = setInterval(() => {
+      void refreshQuotes();
+    }, 30_000);
+    return () => clearInterval(timer);
+  }, [refreshQuotes]);
 
   const listedAssets = listedTestAssets(mintSet, balances?.snapshot ?? null);
   const selectedAssets = listedAssets.filter((asset) => selected.includes(asset.id));
@@ -336,6 +363,12 @@ export function BasketWorkspace() {
     : { kind: "none" as const };
   const fundingCustody = balances?.custody[0]?.amount ?? 0n;
   const hasCustody = (balances?.custody ?? []).some((held) => held.exists);
+  const quotes = quoteSet?.quotes ?? [];
+  const valuation = valueCustody(balances, mintSet, quotes);
+  const valuationHeadline = quotesLoading && !quoteSet && balances?.snapshot
+    ? "Checking"
+    : BasketValuation.headline(valuation);
+  const valuationHint = valuationSourceHint(quoteSet, valuation, quotesLoading);
 
   return (
     <main className="min-h-screen bg-[var(--canvas)] text-[var(--ink)]">
@@ -364,7 +397,11 @@ export function BasketWorkspace() {
 
       <section className="border-b border-black/10 bg-white">
         <dl className="mx-auto grid max-w-[1440px] grid-cols-2 gap-y-5 px-5 py-6 md:grid-cols-4 md:px-8">
-          <Metric label="Valuation" value="Not priced" />
+          <Metric
+            hint={valuationHint}
+            label="Valuation"
+            value={valuationHeadline}
+          />
           <Metric
             label="Basket custody"
             value={balances?.snapshot
@@ -405,10 +442,17 @@ export function BasketWorkspace() {
               <span>Asset</span><span className="text-right">Target</span><span />
             </div>
             {listedAssets.length === 0 ? (
-              <p className="px-4 py-8 text-sm text-[var(--muted)]">
-                Connect a local wallet, then issue local test tokens. Mint addresses
-                are created on the validator, not taken from fixtures.
-              </p>
+              <div className="px-4 py-6">
+                <p className="text-sm text-[var(--muted)]">
+                  Connect a local wallet, then issue local test tokens. Mint addresses
+                  are created on the validator, not taken from fixtures.
+                </p>
+                <ReferenceQuotes
+                  loading={quotesLoading}
+                  quotes={quotes}
+                  source={quoteSet?.source ?? null}
+                />
+              </div>
             ) : listedAssets.map((asset) => {
               const selectedIndex = selectedAssets.findIndex((item) => item.id === asset.id);
               const isSelected = selectedIndex !== -1;
@@ -432,6 +476,9 @@ export function BasketWorkspace() {
                       <span className="block text-sm font-semibold">{asset.symbol}</span>
                       <span className="block truncate text-xs text-[var(--muted)]">
                         {asset.name} · {shortPublicKey(asset.mint)}
+                      </span>
+                      <span className="block truncate text-[11px] text-[var(--muted)]">
+                        {assetPriceCaption(asset.symbol, quotes)}
                       </span>
                     </span>
                   </span>
@@ -493,11 +540,23 @@ export function BasketWorkspace() {
               value={owner ? shortPublicKey(deriveBasketAddress(owner, DEFAULT_BASKET_ID)) : "--"}
             />
             <PreviewRow label="Network" value="Local validator" />
+            <PreviewRow
+              label="Pyth source"
+              value={quoteSet?.source === "hermes"
+                ? "Hermes"
+                : quoteSet?.source === "local-test"
+                  ? "Local test"
+                  : quotesLoading
+                    ? "Checking"
+                    : "Not priced"}
+            />
           </dl>
 
           <ChainPanel
             balances={balances}
+            mintSet={mintSet}
             notice={notice}
+            quotes={quotes}
             recovery={recovery}
           />
 
@@ -567,13 +626,77 @@ export function BasketWorkspace() {
             </div>
           )}
           <p className="mt-4 text-center text-[11px] leading-5 text-[var(--muted)]">
-            Local validator only. The UI waits for confirmation and re-reads accounts
-            before treating a submit as complete. No mainnet transaction is sent.
+            Local validator only. Valuation is Pyth (Hermes or labeled local test).
+            The UI waits for confirmation and re-reads accounts before treating a
+            submit as complete. No mainnet transaction is sent.
           </p>
         </aside>
       </div>
     </main>
   );
+}
+
+function valueCustody(
+  balances: LocalBasketBalances | null,
+  mintSet: LocalTestMintSet | null,
+  quotes: readonly PythQuote[],
+): BasketValuationSnapshot {
+  if (!balances?.snapshot) {
+    return BasketValuation.valueHoldings([], quotes);
+  }
+  return BasketValuation.valueHoldings(
+    balances.custody.map((held) => {
+      const known = mintSet?.funding.mint.equals(held.mint)
+        ? mintSet.funding
+        : mintSet?.assets.find((asset) => asset.mint.equals(held.mint));
+      return {
+        mint: held.mint.toBase58(),
+        symbol: known?.symbol ?? shortPublicKey(held.mint),
+        amount: held.amount,
+        decimals: known?.decimals ?? 6,
+        feedId: LocalTestFeedMap.byMint(held.mint, mintSet)?.feed.id ?? null,
+      };
+    }),
+    quotes,
+  );
+}
+
+function assetPriceCaption(symbol: string, quotes: readonly PythQuote[]): string {
+  const binding = LocalTestFeedMap.byLocalSymbol(symbol);
+  if (!binding) return "Not priced";
+  const quote = quotes.find((item) => item.feedId === binding.feed.id);
+  if (!quote) return `${binding.feed.displaySymbol} stand-in · Not priced`;
+  const unit = BasketValuation.formatUnitPrice(quote);
+  return quote.source === "local-test"
+    ? `${binding.feed.displaySymbol} stand-in · ${unit} local test`
+    : `${binding.feed.pythSymbol} · ${unit}`;
+}
+
+function valuationSourceHint(
+  quoteSet: PythQuoteSet | null,
+  valuation: BasketValuationSnapshot,
+  loading: boolean,
+): string {
+  if (loading && !quoteSet) return "Fetching Pyth quotes";
+  if (!quoteSet) return "";
+  if (quoteSet.quotes.length === 0 && quoteSet.error) {
+    return "Not priced. Pyth quotes unavailable.";
+  }
+  if (valuation.holdings.length === 0) {
+    if (quoteSet.quotes.length === 0) return "";
+    return quoteSet.source === "hermes"
+      ? "Pyth Hermes ready. No holdings to value."
+      : "Pyth local test ready. No holdings to value.";
+  }
+  const source = BasketValuation.sourceLabel(valuation) || (
+    quoteSet.source === "hermes" ? "Pyth Hermes" : "Pyth local test"
+  );
+  if (quoteSet.source === "local-test") {
+    return quoteSet.error
+      ? `${source}. Hermes unavailable; not live marks.`
+      : `${source}. Not live marks.`;
+  }
+  return source;
 }
 
 function listedTestAssets(
@@ -663,11 +786,12 @@ function primaryAction({
   };
 }
 
-function Metric({ label, value }: { label: string; value: string }) {
+function Metric({ label, value, hint = "" }: { label: string; value: string; hint?: string }) {
   return (
     <div className="border-l border-black/10 pl-4 first:border-l-0 first:pl-0 md:pl-6">
       <dt className="text-xs text-[var(--muted)]">{label}</dt>
       <dd className="mt-1 font-mono text-lg font-semibold tabular-nums">{value}</dd>
+      {hint ? <p className="mt-1 text-[11px] text-[var(--muted)]">{hint}</p> : null}
     </div>
   );
 }
@@ -676,13 +800,59 @@ function PreviewRow({ label, value }: { label: string; value: string }) {
   return <div className="flex justify-between gap-4"><dt className="text-[var(--muted)]">{label}</dt><dd className="font-medium">{value}</dd></div>;
 }
 
+function ReferenceQuotes({
+  quotes,
+  source,
+  loading,
+}: {
+  quotes: readonly PythQuote[];
+  source: "hermes" | "local-test" | null;
+  loading: boolean;
+}) {
+  return (
+    <div className="mt-4 border-t border-black/8 pt-4">
+      <p className="mb-2 text-[11px] font-semibold uppercase text-[var(--muted)]">
+        {source === "hermes" ? "Pyth Hermes quotes" : "Pyth local test quotes"}
+      </p>
+      <ul className="space-y-1 font-mono text-[11px] text-[var(--muted)]">
+        {LocalTestFeedMap.BINDINGS.map((row) => {
+          const quote = quotes.find((item) => item.feedId === row.feed.id);
+          return (
+            <li className="flex flex-col gap-0.5 sm:flex-row sm:justify-between sm:gap-3" key={row.localSymbol}>
+              <span className="min-w-0 break-all">
+                {row.localSymbol} → {row.feed.pythSymbol}
+              </span>
+              <span className="sm:shrink-0 sm:text-right">
+                {quote
+                  ? BasketValuation.formatUnitPrice(quote)
+                  : loading
+                    ? "Checking"
+                    : "Not priced"}
+              </span>
+            </li>
+          );
+        })}
+      </ul>
+      <p className="mt-2 text-[11px] leading-5 text-[var(--muted)]">
+        {source === "hermes"
+          ? "Stand-in mapping only. Local mints are not those issuers."
+          : "Hermetic Pyth-format marks, not live markets. Local mints are not those issuers."}
+      </p>
+    </div>
+  );
+}
+
 function ChainPanel({
   balances,
+  mintSet,
   notice,
+  quotes,
   recovery,
 }: {
   balances: LocalBasketBalances | null;
+  mintSet: LocalTestMintSet | null;
   notice: ChainNotice | null;
+  quotes: PythQuote[];
   recovery: ReturnType<typeof nextAction>;
 }) {
   const snapshot = balances?.snapshot;
@@ -710,9 +880,13 @@ function ChainPanel({
             </p>
             {snapshot ? (
               <ul className="mt-2 space-y-1 font-mono text-[11px] text-[var(--muted)]">
-                {balances?.custody.map((held) => (
-                  <li key={held.address.toBase58()}>
-                    {shortPublicKey(held.mint)} · {held.exists ? formatAmount(held.amount, 6) : "no account"}
+                {valueCustody(balances, mintSet, quotes).holdings.map((held) => (
+                  <li key={held.mint}>
+                    {held.symbol} · {formatAmount(held.amount, held.decimals)}
+                    {" · "}
+                    {held.status === "priced" && held.usdAtoms !== null
+                      ? BasketValuation.formatUsd(held.usdAtoms)
+                      : "Not priced"}
                   </li>
                 ))}
               </ul>
