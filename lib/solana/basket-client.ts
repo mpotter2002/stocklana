@@ -96,7 +96,15 @@ interface RuntimeConnection {
 }
 
 export function createLocalConnection(): Connection {
-  return new Connection(LOCAL_RPC_URL, "confirmed");
+  const connection = new Connection(LOCAL_RPC_URL, {
+    commitment: "confirmed",
+    disableRetryOnRateLimit: true,
+  });
+  const websocket = (connection as unknown as {
+    _rpcWebSocket?: { close?: () => void };
+  })._rpcWebSocket;
+  websocket?.close?.();
+  return connection;
 }
 
 export function encodeU64LE(value: bigint): Uint8Array {

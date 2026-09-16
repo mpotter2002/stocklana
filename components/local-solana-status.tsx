@@ -58,25 +58,31 @@ export function LocalSolanaStatus({
 
   const refresh = useCallback(async () => {
     setChecking(true);
-    const injected = getInjectedSolanaWallet();
-    setInjectedWallet(injected);
-    const connectedOwner = injected?.isConnected
-      ? asPublicKey(injected.publicKey)
-      : null;
-    if (!connectingRef.current) {
-      setWallet(
-        connectedOwner
-          ? { state: "connected", address: shortPublicKey(connectedOwner) }
-          : injected
-            ? { state: "ready" }
-            : { state: "missing" },
-      );
-      publishOwner(connectedOwner);
+    try {
+      const injected = getInjectedSolanaWallet();
+      setInjectedWallet(injected);
+      const connectedOwner = injected?.isConnected
+        ? asPublicKey(injected.publicKey)
+        : null;
+      if (!connectingRef.current) {
+        setWallet(
+          connectedOwner
+            ? { state: "connected", address: shortPublicKey(connectedOwner) }
+            : injected
+              ? { state: "ready" }
+              : { state: "missing" },
+        );
+        publishOwner(connectedOwner);
+      }
+      const nextRuntime = await inspectLocalRuntime();
+      setRuntime(nextRuntime);
+      onRuntimeChangeRef.current?.(nextRuntime);
+    } catch {
+      setRuntime(UNKNOWN_RUNTIME);
+      onRuntimeChangeRef.current?.(UNKNOWN_RUNTIME);
+    } finally {
+      setChecking(false);
     }
-    const nextRuntime = await inspectLocalRuntime();
-    setRuntime(nextRuntime);
-    onRuntimeChangeRef.current?.(nextRuntime);
-    setChecking(false);
   }, [publishOwner]);
 
   useEffect(() => {
