@@ -442,10 +442,17 @@ export function BasketWorkspace() {
               <span>Asset</span><span className="text-right">Target</span><span />
             </div>
             {listedAssets.length === 0 ? (
-              <p className="px-4 py-8 text-sm text-[var(--muted)]">
-                Connect a local wallet, then issue local test tokens. Mint addresses
-                are created on the validator, not taken from fixtures.
-              </p>
+              <div className="px-4 py-6">
+                <p className="text-sm text-[var(--muted)]">
+                  Connect a local wallet, then issue local test tokens. Mint addresses
+                  are created on the validator, not taken from fixtures.
+                </p>
+                <ReferenceQuotes
+                  loading={quotesLoading}
+                  quotes={quotes}
+                  source={quoteSet?.source ?? null}
+                />
+              </div>
             ) : listedAssets.map((asset) => {
               const selectedIndex = selectedAssets.findIndex((item) => item.id === asset.id);
               const isSelected = selectedIndex !== -1;
@@ -675,7 +682,12 @@ function valuationSourceHint(
   if (quoteSet.quotes.length === 0 && quoteSet.error) {
     return "Not priced. Pyth quotes unavailable.";
   }
-  if (valuation.holdings.length === 0) return "";
+  if (valuation.holdings.length === 0) {
+    if (quoteSet.quotes.length === 0) return "";
+    return quoteSet.source === "hermes"
+      ? "Pyth Hermes ready. No holdings to value."
+      : "Pyth local test ready. No holdings to value.";
+  }
   const source = BasketValuation.sourceLabel(valuation) || (
     quoteSet.source === "hermes" ? "Pyth Hermes" : "Pyth local test"
   );
@@ -786,6 +798,48 @@ function Metric({ label, value, hint = "" }: { label: string; value: string; hin
 
 function PreviewRow({ label, value }: { label: string; value: string }) {
   return <div className="flex justify-between gap-4"><dt className="text-[var(--muted)]">{label}</dt><dd className="font-medium">{value}</dd></div>;
+}
+
+function ReferenceQuotes({
+  quotes,
+  source,
+  loading,
+}: {
+  quotes: readonly PythQuote[];
+  source: "hermes" | "local-test" | null;
+  loading: boolean;
+}) {
+  return (
+    <div className="mt-4 border-t border-black/8 pt-4">
+      <p className="mb-2 text-[11px] font-semibold uppercase text-[var(--muted)]">
+        {source === "hermes" ? "Pyth Hermes quotes" : "Pyth local test quotes"}
+      </p>
+      <ul className="space-y-1 font-mono text-[11px] text-[var(--muted)]">
+        {LocalTestFeedMap.BINDINGS.map((row) => {
+          const quote = quotes.find((item) => item.feedId === row.feed.id);
+          return (
+            <li className="flex justify-between gap-3" key={row.localSymbol}>
+              <span className="min-w-0 truncate">
+                {row.localSymbol} → {row.feed.pythSymbol}
+              </span>
+              <span className="shrink-0">
+                {quote
+                  ? BasketValuation.formatUnitPrice(quote)
+                  : loading
+                    ? "Checking"
+                    : "Not priced"}
+              </span>
+            </li>
+          );
+        })}
+      </ul>
+      <p className="mt-2 text-[11px] leading-5 text-[var(--muted)]">
+        {source === "hermes"
+          ? "Stand-in mapping only. Local mints are not those issuers."
+          : "Hermetic Pyth-format marks, not live markets. Local mints are not those issuers."}
+      </p>
+    </div>
+  );
 }
 
 function ChainPanel({
