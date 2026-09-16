@@ -32,6 +32,22 @@ Basket and holdings dollars come from Pyth quotes, not fixture prices. See
 local-test Pyth-format quotes so local-dev still shows priced vs not-priced
 honestly.
 
+Jupiter xStocks/indexes load from same-origin `/api/jupiter/inventory` (Tokens
+API, then search fallback). Route previews use `/api/jupiter/build`. Optional
+`.env.local` (gitignored):
+
+```sh
+# JUPITER_API_KEY=          # forwarded server-side as x-api-key
+# JUPITER_API_BASE=https://api.jup.ag
+# STOCKLANA_INVENTORY_SOURCE=auto   # auto | jupiter | backpack
+```
+
+`auto` tries Jupiter first. Backpack `GET /api/v1/markets` is backup only when
+Jupiter is blocked; those rows are venue symbols, not Solana mints. Mock-swap
+stays the local-testing execution adapter (`anchor build -p basket -- --features local-testing`).
+Jupiter CPI needs the documented v6 program and route AMMs on the same
+validator as the basket; a plain local validator will not land those swaps.
+
 Checks without a validator:
 
 ```sh
@@ -148,8 +164,11 @@ Implemented:
 - Basket and holdings valuation from Pyth Hermes when a key is configured,
   otherwise from labeled local-test Pyth-format quotes. Unmapped or failed
   feeds stay **Not priced**; incomplete baskets show a **Partial** total.
+- Jupiter Tokens API inventory for xStocks and indexes, plus `/swap/v2/build`
+  quotes and an `execute_jupiter_leg` CPI instruction. Quotes are labeled as
+  quotes, not fills. Localnet still cannot land Jupiter AMMs.
 
-Not implemented: Jupiter execution, browser mock-leg
+Not implemented: live Jupiter fills on the local validator, browser mock-leg
 execution, basket closure, public deployment, or funded live transactions.
 No real-world asset has been approved for execution.
 
@@ -160,13 +179,16 @@ versions compatible with Agave's SBF Rust 1.84 toolchain. See
 
 ## Structure
 
-- `lib/`: pure, network-independent TypeScript, including Pyth quote parsing
-  and bigint valuation.
+- `lib/`: TypeScript helpers, including Pyth quote parsing and bigint valuation.
+- `lib/jupiter/`: Jupiter inventory, `/build` parsing, and CPI remaining-account
+  checks. Network calls stay in the same-origin API routes.
 - `tests/*.test.ts`: Node's built-in test runner, no blockchain or wallet required.
+- `tests/fixtures/jupiter/`: recorded Tokens API and `/swap/v2/build` payloads.
 - `tests/integration/`: local-validator Anchor scenarios.
 - `programs/basket/`: personal basket custody and operation program.
 - `programs/mock-swap/`: local-only deterministic swap fixture.
-- `app/` and `components/`: local demonstration UI, including `/api/pyth/latest`.
+- `app/` and `components/`: local demonstration UI, including `/api/pyth/latest`
+  and the Jupiter rail.
 - `lib/solana/`: typed local RPC, PDA, account decoding, instruction builders,
   local transaction submission, and injected-wallet boundaries.
 - `lib/pyth/`: official feed IDs, Hermes client, hermetic quotes, and holdings

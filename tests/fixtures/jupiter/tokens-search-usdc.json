@@ -1,0 +1,52 @@
+[
+  {
+    "id": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+    "name": "USD Coin",
+    "symbol": "USDC",
+    "decimals": 6,
+    "tokenProgram": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+    "isVerified": true,
+    "tags": [
+      "stable",
+      "community",
+      "moonshot-verified",
+      "strict",
+      "verified"
+    ],
+    "organicScore": 100,
+    "organicScoreLabel": "high"
+  },
+  {
+    "id": "9BEcn9aPEmhSPbPQeFGjidRiEKki46fVQDyPpSQXPA2D",
+    "name": "Jupiter Lend USDC",
+    "symbol": "jlUSDC",
+    "decimals": 6,
+    "tokenProgram": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+    "isVerified": true,
+    "tags": [
+      "community-assist",
+      "verified",
+      "jup-lend-earn",
+      "yb",
+      "yield"
+    ],
+    "organicScore": 85.69478098435373,
+    "organicScoreLabel": "high"
+  },
+  {
+    "id": "59obFNBzyTBGowrkif5uK7ojS58vsuWz3ZCvg6tfZAGw",
+    "name": "PayFi Strategy Token USDC",
+    "symbol": "PST",
+    "decimals": 6,
+    "tokenProgram": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+    "isVerified": true,
+    "tags": [
+      "community-assist",
+      "verified",
+      "yb",
+      "yield"
+    ],
+    "organicScore": 0,
+    "organicScoreLabel": "low"
+  }
+]
