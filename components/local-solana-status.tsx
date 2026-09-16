@@ -8,12 +8,13 @@ import {
   Wallet,
 } from "lucide-react";
 import type { PublicKey } from "@solana/web3.js";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   inspectLocalRuntime,
   type LocalRuntimeStatus,
 } from "../lib/solana/basket-client";
 import {
+  asPublicKey,
   getInjectedSolanaWallet,
   shortPublicKey,
   type InjectedSolanaWallet,
@@ -33,29 +34,50 @@ const UNKNOWN_RUNTIME: LocalRuntimeStatus = {
   version: null,
 };
 
-export function LocalSolanaStatus() {
+export function LocalSolanaStatus({
+  onOwnerChange,
+  onRuntimeChange,
+}: {
+  onOwnerChange?: (owner: PublicKey | null) => void;
+  onRuntimeChange?: (runtime: LocalRuntimeStatus) => void;
+}) {
   const [runtime, setRuntime] = useState(UNKNOWN_RUNTIME);
   const [checking, setChecking] = useState(true);
   const [wallet, setWallet] = useState<WalletStatus>({ state: "missing" });
   const [walletError, setWalletError] = useState<string | null>(null);
   const [injectedWallet, setInjectedWallet] = useState<InjectedSolanaWallet | null>(null);
+  const connectingRef = useRef(false);
+  const onOwnerChangeRef = useRef(onOwnerChange);
+  const onRuntimeChangeRef = useRef(onRuntimeChange);
+  onOwnerChangeRef.current = onOwnerChange;
+  onRuntimeChangeRef.current = onRuntimeChange;
+
+  const publishOwner = useCallback((owner: PublicKey | null) => {
+    onOwnerChangeRef.current?.(owner);
+  }, []);
 
   const refresh = useCallback(async () => {
     setChecking(true);
     const injected = getInjectedSolanaWallet();
     setInjectedWallet(injected);
-    setWallet((current) => {
-      if (current.state === "connecting") {
-        return current;
-      }
-      if (injected?.isConnected && injected.publicKey) {
-        return { state: "connected", address: shortPublicKey(injected.publicKey) };
-      }
-      return injected ? { state: "ready" } : { state: "missing" };
-    });
-    setRuntime(await inspectLocalRuntime());
+    const connectedOwner = injected?.isConnected
+      ? asPublicKey(injected.publicKey)
+      : null;
+    if (!connectingRef.current) {
+      setWallet(
+        connectedOwner
+          ? { state: "connected", address: shortPublicKey(connectedOwner) }
+          : injected
+            ? { state: "ready" }
+            : { state: "missing" },
+      );
+      publishOwner(connectedOwner);
+    }
+    const nextRuntime = await inspectLocalRuntime();
+    setRuntime(nextRuntime);
+    onRuntimeChangeRef.current?.(nextRuntime);
     setChecking(false);
-  }, []);
+  }, [publishOwner]);
 
   useEffect(() => {
     void refresh();
@@ -66,44 +88,62 @@ export function LocalSolanaStatus() {
     if (!injected?.on) return;
 
     const handleAccountChanged = (publicKey: PublicKey | null) => {
+      const owner = asPublicKey(publicKey);
       setWalletError(null);
+      connectingRef.current = false;
       setWallet(
-        publicKey
-          ? { state: "connected", address: shortPublicKey(publicKey) }
+        owner
+          ? { state: "connected", address: shortPublicKey(owner) }
           : { state: "ready" },
       );
+      publishOwner(owner);
     };
     injected.on("accountChanged", handleAccountChanged);
     return () => injected.off?.("accountChanged", handleAccountChanged);
-  }, [injectedWallet]);
+  }, [injectedWallet, publishOwner]);
 
   async function toggleWallet(): Promise<void> {
     setWalletError(null);
     const injected = getInjectedSolanaWallet();
     if (!injected) {
+      connectingRef.current = false;
       setWallet({ state: "missing" });
+      publishOwner(null);
       return;
     }
 
     if (wallet.state === "connected") {
       try {
         await injected.disconnect();
+        connectingRef.current = false;
         setWallet({ state: "ready" });
+        publishOwner(null);
       } catch {
         setWalletError("Disconnect failed. Try again.");
       }
       return;
     }
 
+    connectingRef.current = true;
     setWallet({ state: "connecting" });
     try {
       const result = await injected.connect();
+      const owner = asPublicKey(result.publicKey);
+      connectingRef.current = false;
+      if (!owner) {
+        setWallet({ state: "error" });
+        publishOwner(null);
+        return;
+      }
       setWallet({
         state: "connected",
-        address: shortPublicKey(result.publicKey),
+        address: shortPublicKey(owner),
       });
+      publishOwner(owner);
     } catch {
+      connectingRef.current = false;
       setWallet({ state: "error" });
+      publishOwner(null);
     }
   }
 

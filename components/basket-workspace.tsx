@@ -6,95 +6,336 @@ import {
   Check,
   CircleDollarSign,
   Layers3,
-  LogOut,
   RefreshCw,
   ShieldCheck,
   Wallet,
 } from "lucide-react";
-import { useState } from "react";
+import { PublicKey, type Signer, type TransactionInstruction } from "@solana/web3.js";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { allocateInvestment, equalWeights } from "../lib/allocation.ts";
 import { formatAmount, parseAmount } from "../lib/amounts.ts";
+import { nextAction, type OperationSnapshot } from "../lib/recovery.ts";
+import {
+  createLocalConnection,
+  deriveBasketAddress,
+  fetchBasketSnapshot,
+  type BasketSnapshot,
+  type LocalRuntimeStatus,
+} from "../lib/solana/basket-client";
+import { BasketInstructions } from "../lib/solana/basket-instructions";
+import {
+  getInjectedSolanaWallet,
+  shortPublicKey,
+} from "../lib/solana/injected-wallet";
+import {
+  DEFAULT_BASKET_ID,
+  LocalBasketReader,
+  type LocalBasketBalances,
+} from "../lib/solana/local-basket-reader";
+import {
+  LocalSolAirdrop,
+  LocalTestMints,
+  type LocalTestMint,
+  type LocalTestMintSet,
+} from "../lib/solana/local-test-mints";
+import {
+  LocalTransactionError,
+  LocalTransactionRunner,
+  describeLocalTransactionError,
+} from "../lib/solana/local-transaction";
 import { LocalSolanaStatus } from "./local-solana-status";
 
-const ASSETS = [
-  { id: "alpha", symbol: "ALPHAt", name: "Alpha test equity", color: "#2f6f58" },
-  { id: "beacon", symbol: "BEACONt", name: "Beacon test equity", color: "#3d68a0" },
-  { id: "cedar", symbol: "CEDARt", name: "Cedar test equity", color: "#b45b46" },
-] as const;
+const UNKNOWN_RUNTIME: LocalRuntimeStatus = {
+  validator: "offline",
+  programDeployed: null,
+  slot: null,
+  version: null,
+};
 
-type Execution = "draft" | "ready" | "running" | "attention" | "complete" | "exiting";
+type ChainNotice = {
+  tone: "ok" | "error" | "info";
+  title: string;
+  detail: string;
+  signature: string | null;
+};
 
 export function BasketWorkspace() {
-  const [connected, setConnected] = useState(false);
-  const [selected, setSelected] = useState<string[]>(["alpha", "beacon"]);
+  const connection = useMemo(() => createLocalConnection(), []);
+  const [owner, setOwner] = useState<PublicKey | null>(null);
+  const [runtime, setRuntime] = useState(UNKNOWN_RUNTIME);
+  const [mintSet, setMintSet] = useState<LocalTestMintSet | null>(null);
+  const [balances, setBalances] = useState<LocalBasketBalances | null>(null);
+  const [selected, setSelected] = useState<string[]>([]);
   const [amount, setAmount] = useState("25");
-  const [execution, setExecution] = useState<Execution>("draft");
-  const [completed, setCompleted] = useState(0);
-  const [testRecovery, setTestRecovery] = useState(true);
-  const selectedAssets = ASSETS.filter((asset) => selected.includes(asset.id));
-  const weights = equalWeights(selectedAssets.length);
+  const [busy, setBusy] = useState(false);
+  const [notice, setNotice] = useState<ChainNotice | null>(null);
+  const handleOwnerChange = useCallback((next: PublicKey | null) => {
+    setOwner((current) => {
+      if (current && next && current.equals(next)) return current;
+      if (!current && !next) return current;
+      return next;
+    });
+  }, []);
 
-  let allocations: bigint[] = [];
+  const refreshChain = useCallback(async (nextOwner = owner) => {
+    if (!nextOwner) {
+      setMintSet(null);
+      setBalances(null);
+      return;
+    }
+    let loaded = LocalTestMints.load(nextOwner);
+    if (loaded && !(await LocalTestMints.stillOnChain(connection, loaded))) {
+      LocalTestMints.clear();
+      loaded = null;
+    }
+    setMintSet(loaded);
+    const view = await LocalBasketReader.load(connection, nextOwner, {
+      mintSet: loaded,
+    });
+    setBalances(view);
+    if (view.snapshot) {
+      setSelected(view.snapshot.mints.map((mint) => mint.toBase58()));
+    } else if (loaded) {
+      setSelected((current) => {
+        const available = new Set(loaded.assets.map((asset) => asset.mint.toBase58()));
+        const stillValid = current.filter((id) => available.has(id));
+        if (stillValid.length >= 2) return stillValid;
+        return loaded.assets.slice(0, 2).map((asset) => asset.mint.toBase58());
+      });
+    }
+  }, [connection, owner]);
+
+  useEffect(() => {
+    void refreshChain(owner).catch((error: unknown) => {
+      setNotice({
+        tone: "error",
+        title: "Chain refresh failed",
+        detail: describeLocalTransactionError(error),
+        signature: null,
+      });
+    });
+  }, [owner, refreshChain]);
+
+  const listedAssets = listedTestAssets(mintSet, balances?.snapshot ?? null);
+  const selectedAssets = listedAssets.filter((asset) => selected.includes(asset.id));
+  const weights = balances?.snapshot?.targetBps
+    ?? (selectedAssets.length >= 2 ? equalWeights(selectedAssets.length) : []);
+  const snapshotLocked = Boolean(balances?.snapshot);
+
+  let depositAmount: bigint | null = null;
   let amountError = "";
   try {
-    allocations = allocateInvestment(parseAmount(amount, 6), selectedAssets.length);
+    depositAmount = parseAmount(amount, 6);
+    if (depositAmount > 0n && selectedAssets.length >= 2) {
+      allocateInvestment(depositAmount, selectedAssets.length);
+    }
   } catch (error) {
     amountError = error instanceof Error ? error.message : "Invalid amount";
+    depositAmount = null;
   }
 
-  function resetExecution(): void {
-    setExecution("draft");
-    setCompleted(0);
-  }
+  const allocations = depositAmount && depositAmount > 0n && selectedAssets.length >= 2 && !amountError
+    ? allocateInvestment(depositAmount, selectedAssets.length)
+    : [];
 
   function toggleAsset(id: string): void {
+    if (snapshotLocked) return;
     setSelected((current) => {
       if (current.includes(id)) {
         return current.length === 2 ? current : current.filter((item) => item !== id);
       }
       return current.length === 3 ? current : [...current, id];
     });
-    resetExecution();
   }
 
-  function advance(): void {
-    if (execution === "draft") {
-      setExecution("ready");
-      return;
+  async function runAction(
+    title: string,
+    action: () => Promise<string | null>,
+  ): Promise<void> {
+    setBusy(true);
+    setNotice({
+      tone: "info",
+      title,
+      detail: "Waiting for wallet signature and local-validator confirmation.",
+      signature: null,
+    });
+    try {
+      const signature = await action();
+      await refreshChain();
+      if (signature) {
+        setNotice({
+          tone: "ok",
+          title: `${title} confirmed`,
+          detail: "On-chain state was re-read after confirmation.",
+          signature,
+        });
+      }
+    } catch (error) {
+      await refreshChain().catch(() => undefined);
+      setNotice({
+        tone: "error",
+        title: `${title} failed`,
+        detail: describeLocalTransactionError(error),
+        signature: error instanceof LocalTransactionError ? error.signature : null,
+      });
+    } finally {
+      setBusy(false);
     }
-    if (execution === "ready") {
-      setCompleted(1);
-      setExecution(selectedAssets.length === 1 ? "complete" : "running");
-      return;
-    }
-    if (execution === "running" && testRecovery && completed === 1) {
-      setExecution("attention");
-      return;
-    }
-    completeNextLeg();
   }
 
-  function completeNextLeg(): void {
-    const next = completed + 1;
-    setCompleted(next);
-    setExecution(next === selectedAssets.length ? "complete" : "running");
+  async function submitInstructions(
+    instructions: TransactionInstruction[],
+    extraSigners?: Signer[],
+  ): Promise<string> {
+    const wallet = getInjectedSolanaWallet();
+    if (!wallet) throw new Error("No injected Solana wallet is available");
+    const submitted = await LocalTransactionRunner.submit({
+      connection,
+      wallet: LocalTransactionRunner.signerFromInjected(wallet),
+      instructions,
+      ...(extraSigners ? { extraSigners } : {}),
+    });
+    return submitted.signature;
   }
 
-  const actionLabel = !connected
-    ? "Use fixture wallet"
-    : amountError
-      ? "Check amount"
-      : execution === "draft"
-        ? "Prepare basket"
-        : execution === "ready"
-          ? "Execute leg 1"
-          : execution === "running"
-            ? `Execute leg ${completed + 1}`
-            : execution === "complete"
-              ? "Basket complete"
-              : execution === "exiting"
-                ? "Recovered in kind"
-                : "Action required";
+  async function issueTestTokens(): Promise<string | null> {
+    if (!owner) throw new Error("Connect a wallet first");
+    await LocalSolAirdrop.ensure(connection, owner);
+    const issued = LocalTestMints.issue({
+      owner,
+      rentLamports: await LocalTestMints.mintRentLamports(connection),
+    });
+    const signature = await submitInstructions(issued.instructions, issued.extraSigners);
+    LocalTestMints.save(issued.mintSet);
+    setMintSet(issued.mintSet);
+    return signature;
+  }
+
+  async function createBasket(): Promise<string | null> {
+    if (!owner || !mintSet) throw new Error("Issue local test tokens first");
+    if (selectedAssets.length < 2) throw new Error("Select two or three assets");
+    const existing = await fetchBasketSnapshot(connection, owner, DEFAULT_BASKET_ID);
+    if (existing) {
+      setNotice({
+        tone: "info",
+        title: "Basket already exists",
+        detail: "Create was skipped after reading the basket account.",
+        signature: null,
+      });
+      return null;
+    }
+    const recipe = BasketInstructions.equalRecipe(
+      mintSet.funding.mint,
+      mintSet.funding.tokenProgram,
+      selectedAssets.map((asset) => asset.mint),
+      selectedAssets.map((asset) => asset.tokenProgram),
+    );
+    const instructions = [
+      BasketInstructions.createBasket({
+        owner,
+        basketId: DEFAULT_BASKET_ID,
+        recipe,
+      }),
+    ];
+    if (depositAmount && depositAmount > 0n) {
+      const walletFunding = await LocalBasketReader.load(connection, owner, { mintSet });
+      if (depositAmount > walletFunding.walletFunding) {
+        throw new Error("Wallet USDCt balance is below the deposit amount");
+      }
+      instructions.push(BasketInstructions.deposit({
+        owner,
+        basketId: DEFAULT_BASKET_ID,
+        mint: mintSet.funding.mint,
+        tokenProgram: mintSet.funding.tokenProgram,
+        amount: depositAmount,
+      }));
+    }
+    return submitInstructions(instructions);
+  }
+
+  async function deposit(): Promise<string | null> {
+    if (!owner) throw new Error("Connect a wallet first");
+    const snapshot = await fetchBasketSnapshot(connection, owner, DEFAULT_BASKET_ID);
+    if (!snapshot) throw new Error("Create a basket before depositing");
+    if (snapshot.phase !== "idle") {
+      throw new Error("Basket is busy. Finish or exit the operation before depositing.");
+    }
+    if (!depositAmount || depositAmount <= 0n) throw new Error("Enter a deposit amount");
+    const walletFunding = await LocalBasketReader.load(connection, owner, { mintSet });
+    if (depositAmount > walletFunding.walletFunding) {
+      throw new Error("Wallet funding balance is below the deposit amount");
+    }
+    return submitInstructions([
+      BasketInstructions.deposit({
+        owner,
+        basketId: snapshot.basketId,
+        mint: snapshot.fundingMint,
+        tokenProgram: snapshot.fundingTokenProgram,
+        amount: depositAmount,
+      }),
+    ]);
+  }
+
+  async function withdraw(): Promise<string | null> {
+    if (!owner) throw new Error("Connect a wallet first");
+    const view = await LocalBasketReader.load(connection, owner, { mintSet });
+    if (!view.snapshot) throw new Error("No basket account to withdraw from");
+    if (view.snapshot.phase !== "idle" && view.snapshot.phase !== "exiting") {
+      throw new Error("Begin in-kind exit before withdrawing during an operation");
+    }
+    const instructions = view.custody.filter((held) => held.exists).map((held) =>
+      BasketInstructions.withdrawFull({
+        owner,
+        basketId: view.snapshot!.basketId,
+        mint: held.mint,
+        tokenProgram: held.tokenProgram,
+      }),
+    );
+    if (instructions.length === 0) {
+      throw new Error("No custody accounts exist on chain for this basket");
+    }
+    return submitInstructions(instructions);
+  }
+
+  async function beginExit(): Promise<string | null> {
+    if (!owner) throw new Error("Connect a wallet first");
+    const snapshot = await fetchBasketSnapshot(connection, owner, DEFAULT_BASKET_ID);
+    if (!snapshot) throw new Error("No basket account to exit");
+    return submitInstructions([
+      BasketInstructions.beginExit({
+        owner,
+        basketId: snapshot.basketId,
+        nonce: snapshot.operationNonce,
+      }),
+    ]);
+  }
+
+  async function finishOperation(): Promise<string | null> {
+    if (!owner) throw new Error("Connect a wallet first");
+    const snapshot = await fetchBasketSnapshot(connection, owner, DEFAULT_BASKET_ID);
+    if (!snapshot) throw new Error("No basket account to finish");
+    return submitInstructions([
+      BasketInstructions.finishOperation({
+        owner,
+        basketId: snapshot.basketId,
+        nonce: snapshot.operationNonce,
+      }),
+    ]);
+  }
+
+  const primary = primaryAction({
+    owner,
+    runtime,
+    mintSet,
+    balances,
+    amountError,
+    busy,
+  });
+  const recovery = balances?.snapshot
+    ? nextAction(toOperationSnapshot(balances.snapshot))
+    : { kind: "none" as const };
+  const fundingCustody = balances?.custody[0]?.amount ?? 0n;
+  const hasCustody = (balances?.custody ?? []).some((held) => held.exists);
 
   return (
     <main className="min-h-screen bg-[var(--canvas)] text-[var(--ink)]">
@@ -111,42 +352,48 @@ export function BasketWorkspace() {
           </div>
           <div className="flex items-center gap-3">
             <span className="hidden border border-white/15 px-2 py-1 text-[11px] font-medium text-white/65 sm:inline">
-              LOCAL FIXTURES
+              LOCAL TEST
             </span>
-            <button
-              className="inline-flex h-9 items-center gap-2 rounded-[6px] border border-white/20 px-3 text-sm font-medium hover:bg-white/10"
-              onClick={() => {
-                setConnected((value) => !value);
-                resetExecution();
-              }}
-              type="button"
-            >
-              {connected ? <LogOut size={15} /> : <Wallet size={15} />}
-              {connected ? "8XnQ...fixture" : "Demo wallet"}
-            </button>
+            <span className="inline-flex h-9 items-center gap-2 rounded-[6px] border border-white/20 px-3 text-sm font-medium">
+              <Wallet size={15} />
+              {owner ? shortPublicKey(owner) : "No wallet"}
+            </span>
           </div>
         </div>
       </header>
 
       <section className="border-b border-black/10 bg-white">
         <dl className="mx-auto grid max-w-[1440px] grid-cols-2 gap-y-5 px-5 py-6 md:grid-cols-4 md:px-8">
-          <Metric label="Portfolio value" value="$0.00" />
-          <Metric label="Invested" value="$0.00" />
-          <Metric label="Available USDC" value={connected ? "$125.00" : "--"} />
-          <Metric label="Open baskets" value="0" />
+          <Metric label="Valuation" value="Not priced" />
+          <Metric
+            label="Basket custody"
+            value={balances?.snapshot
+              ? `${formatAmount(fundingCustody, 6)} USDCt`
+              : "--"}
+          />
+          <Metric
+            label="Wallet USDCt"
+            value={owner ? `${formatAmount(balances?.walletFunding ?? 0n, 6)}` : "--"}
+          />
+          <Metric label="Open baskets" value={owner ? (balances?.snapshot ? "1" : "0") : "--"} />
         </dl>
       </section>
 
-      <LocalSolanaStatus />
+      <LocalSolanaStatus
+        onOwnerChange={handleOwnerChange}
+        onRuntimeChange={setRuntime}
+      />
 
       <div className="mx-auto grid max-w-[1440px] lg:grid-cols-[minmax(0,1fr)_390px]">
         <section className="px-5 py-8 md:px-8 lg:border-r lg:border-black/10">
           <div className="mb-7 flex items-end justify-between gap-4">
             <div>
               <p className="mb-2 text-xs font-semibold uppercase text-[var(--muted)]">
-                New basket
+                {snapshotLocked ? "On-chain basket" : "New basket"}
               </p>
-              <h1 className="text-2xl font-semibold">Choose your holdings</h1>
+              <h1 className="text-2xl font-semibold">
+                {snapshotLocked ? "Holdings from confirmed state" : "Choose your holdings"}
+              </h1>
             </div>
             <span className="text-sm tabular-nums text-[var(--muted)]">
               {selected.length}/3 selected
@@ -157,14 +404,19 @@ export function BasketWorkspace() {
             <div className="grid grid-cols-[1fr_90px_44px] border-b border-black/10 bg-[#f0f2ef] px-4 py-2 text-[11px] font-semibold uppercase text-[var(--muted)]">
               <span>Asset</span><span className="text-right">Target</span><span />
             </div>
-            {ASSETS.map((asset) => {
-              const index = selectedAssets.findIndex((item) => item.id === asset.id);
-              const isSelected = index !== -1;
+            {listedAssets.length === 0 ? (
+              <p className="px-4 py-8 text-sm text-[var(--muted)]">
+                Connect a local wallet, then issue local test tokens. Mint addresses
+                are created on the validator, not taken from fixtures.
+              </p>
+            ) : listedAssets.map((asset) => {
+              const selectedIndex = selectedAssets.findIndex((item) => item.id === asset.id);
+              const isSelected = selectedIndex !== -1;
               return (
                 <button
                   aria-pressed={isSelected}
                   className="grid w-full grid-cols-[1fr_90px_44px] items-center border-b border-black/8 px-4 py-4 text-left last:border-b-0 hover:bg-[#f7f8f5] disabled:cursor-not-allowed"
-                  disabled={isSelected && selected.length === 2}
+                  disabled={snapshotLocked || (isSelected && selected.length === 2)}
                   key={asset.id}
                   onClick={() => toggleAsset(asset.id)}
                   type="button"
@@ -178,11 +430,13 @@ export function BasketWorkspace() {
                     </span>
                     <span className="min-w-0">
                       <span className="block text-sm font-semibold">{asset.symbol}</span>
-                      <span className="block truncate text-xs text-[var(--muted)]">{asset.name}</span>
+                      <span className="block truncate text-xs text-[var(--muted)]">
+                        {asset.name} · {shortPublicKey(asset.mint)}
+                      </span>
                     </span>
                   </span>
                   <span className="text-right font-mono text-sm tabular-nums">
-                    {isSelected ? `${(weights[index] ?? 0) / 100}%` : "--"}
+                    {isSelected ? `${(weights[selectedIndex] ?? 0) / 100}%` : "--"}
                   </span>
                   <span className={`ml-auto grid size-6 place-items-center rounded-[4px] border ${
                     isSelected ? "border-[var(--green)] bg-[var(--green)] text-white" : "border-black/20"
@@ -193,9 +447,8 @@ export function BasketWorkspace() {
               );
             })}
           </div>
-
           <label className="mt-8 block max-w-md text-xs font-semibold uppercase text-[var(--muted)]" htmlFor="investment">
-            Investment
+            Deposit
           </label>
           <div className="mt-2 flex max-w-md items-center rounded-[6px] border border-black/15 bg-white focus-within:border-[var(--blue)] focus-within:ring-2 focus-within:ring-[var(--blue)]/10">
             <CircleDollarSign className="ml-3 text-[var(--muted)]" size={18} />
@@ -203,16 +456,13 @@ export function BasketWorkspace() {
               className="h-12 min-w-0 flex-1 bg-transparent px-3 font-mono text-lg outline-none"
               id="investment"
               inputMode="decimal"
-              onChange={(event) => {
-                setAmount(event.target.value);
-                resetExecution();
-              }}
+              onChange={(event) => setAmount(event.target.value)}
               value={amount}
             />
-            <span className="pr-4 text-xs font-semibold text-[var(--muted)]">USDC</span>
+            <span className="pr-4 text-xs font-semibold text-[var(--muted)]">USDCt</span>
           </div>
           <p className={`mt-2 min-h-5 text-xs ${amountError ? "text-[var(--red)]" : "text-[var(--muted)]"}`}>
-            {amountError || "Local calculation only"}
+            {amountError || "Local test token, 6 decimals. Split below is a calculation only."}
           </p>
         </section>
 
@@ -229,7 +479,7 @@ export function BasketWorkspace() {
                 </span>
                 <span className="w-20 text-xs font-semibold">{asset.symbol}</span>
                 <span className="w-20 text-right font-mono text-xs tabular-nums">
-                  {allocations[index] === undefined ? "--" : `$${formatAmount(allocations[index], 6)}`}
+                  {allocations[index] === undefined ? "--" : formatAmount(allocations[index], 6)}
                 </span>
               </div>
             ))}
@@ -238,63 +488,179 @@ export function BasketWorkspace() {
           <dl className="my-6 space-y-3 border-y border-black/10 py-5 text-sm">
             <PreviewRow label="Assets" value={`${selectedAssets.length}`} />
             <PreviewRow label="Weighting" value="Equal" />
-            <PreviewRow label="Execution" value="Sequential" />
+            <PreviewRow
+              label="Basket"
+              value={owner ? shortPublicKey(deriveBasketAddress(owner, DEFAULT_BASKET_ID)) : "--"}
+            />
             <PreviewRow label="Network" value="Local validator" />
           </dl>
 
-          <label className="flex cursor-pointer items-center justify-between gap-4 text-sm">
-            <span className="flex items-center gap-2">
-              <ShieldCheck size={17} className="text-[var(--green)]" />
-              Test recovery
-            </span>
-            <input
-              checked={testRecovery}
-              className="size-4 accent-[var(--green)]"
-              onChange={(event) => {
-                setTestRecovery(event.target.checked);
-                resetExecution();
-              }}
-              type="checkbox"
-            />
-          </label>
+          <ChainPanel
+            balances={balances}
+            notice={notice}
+            recovery={recovery}
+          />
 
-          <ExecutionPanel completed={completed} count={selectedAssets.length} state={execution} />
-
-          {execution === "attention" ? (
+          {recovery.kind === "prepare-leg" ? (
             <div className="mt-4 grid grid-cols-2 gap-2">
               <button
-                className="inline-flex h-11 items-center justify-center gap-2 rounded-[6px] bg-[var(--ink)] px-4 text-sm font-semibold text-white"
-                onClick={completeNextLeg}
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-[6px] bg-[var(--ink)] px-4 text-sm font-semibold text-white disabled:bg-black/25"
+                disabled={busy || !owner}
+                onClick={() => void runAction("Begin in-kind exit", beginExit)}
                 type="button"
               >
-                <RefreshCw size={15} />Retry leg
+                Begin exit
               </button>
               <button
-                className="inline-flex h-11 items-center justify-center rounded-[6px] border border-black/20 bg-white px-4 text-sm font-semibold"
-                onClick={() => setExecution("exiting")}
+                className="inline-flex h-11 items-center justify-center rounded-[6px] border border-black/20 bg-white px-4 text-sm font-semibold disabled:opacity-50"
+                disabled
                 type="button"
               >
-                Exit in kind
+                Mock/Jupiter later
               </button>
             </div>
-          ) : (
+          ) : recovery.kind === "finish" ? (
             <button
               className="mt-6 inline-flex h-12 w-full items-center justify-center gap-2 rounded-[6px] bg-[var(--ink)] px-4 text-sm font-semibold text-white hover:bg-black disabled:cursor-not-allowed disabled:bg-black/25"
-              disabled={execution === "complete" || execution === "exiting" || Boolean(amountError)}
-              onClick={!connected ? () => setConnected(true) : advance}
+              disabled={busy || !owner}
+              onClick={() => void runAction("Finish operation", finishOperation)}
               type="button"
             >
-              {execution === "complete" ? <Check size={16} /> : <ArrowRight size={16} />}
-              {actionLabel}
+              <Check size={16} />
+              Finish operation
             </button>
+          ) : (
+            <div className="mt-6 space-y-2">
+              <button
+                className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-[6px] bg-[var(--ink)] px-4 text-sm font-semibold text-white hover:bg-black disabled:cursor-not-allowed disabled:bg-black/25"
+                disabled={primary.disabled || busy}
+                onClick={() => void runAction(primary.title, primary.run === "issue"
+                  ? issueTestTokens
+                  : primary.run === "create"
+                    ? createBasket
+                    : deposit)}
+                type="button"
+              >
+                {busy ? <RefreshCw className="animate-spin" size={16} /> : <ArrowRight size={16} />}
+                {primary.label}
+              </button>
+              {hasCustody && recovery.kind === "none" ? (
+                <button
+                  className="inline-flex h-11 w-full items-center justify-center rounded-[6px] border border-black/20 bg-white px-4 text-sm font-semibold disabled:opacity-50"
+                  disabled={busy || !owner}
+                  onClick={() => void runAction("Withdraw holdings", withdraw)}
+                  type="button"
+                >
+                  Withdraw holdings
+                </button>
+              ) : null}
+              {recovery.kind === "withdraw-holdings" ? (
+                <button
+                  className="inline-flex h-11 w-full items-center justify-center rounded-[6px] border border-black/20 bg-white px-4 text-sm font-semibold disabled:opacity-50"
+                  disabled={busy || !owner}
+                  onClick={() => void runAction("Withdraw holdings", withdraw)}
+                  type="button"
+                >
+                  Withdraw in kind
+                </button>
+              ) : null}
+            </div>
           )}
           <p className="mt-4 text-center text-[11px] leading-5 text-[var(--muted)]">
-            Local fixtures only. No wallet transaction or market order is sent.
+            Local validator only. The UI waits for confirmation and re-reads accounts
+            before treating a submit as complete. No mainnet transaction is sent.
           </p>
         </aside>
       </div>
     </main>
   );
+}
+
+function listedTestAssets(
+  mintSet: LocalTestMintSet | null,
+  snapshot: BasketSnapshot | null,
+): (LocalTestMint & { id: string })[] {
+  if (snapshot) {
+    return snapshot.mints.map((mint, index) => {
+      const known = mintSet?.assets.find((asset) => asset.mint.equals(mint));
+      return {
+        id: mint.toBase58(),
+        symbol: known?.symbol ?? `Asset ${index + 1}`,
+        name: known?.name ?? "On-chain mint",
+        color: known?.color ?? "#68716c",
+        mint,
+        tokenProgram: snapshot.tokenPrograms[index]!,
+        decimals: known?.decimals ?? 6,
+      };
+    });
+  }
+  return (mintSet?.assets ?? []).map((asset) => ({
+    ...asset,
+    id: asset.mint.toBase58(),
+  }));
+}
+
+function toOperationSnapshot(snapshot: BasketSnapshot): OperationSnapshot {
+  const phase = snapshot.phase === "idle"
+    ? "idle"
+    : snapshot.phase === "exiting"
+      ? "exiting"
+      : "active";
+  return {
+    nonce: snapshot.operationNonce,
+    phase,
+    legCount: snapshot.legs.length,
+    completed: snapshot.legs.map((leg) => leg.complete),
+  };
+}
+
+function primaryAction({
+  owner,
+  runtime,
+  mintSet,
+  balances,
+  amountError,
+  busy,
+}: {
+  owner: PublicKey | null;
+  runtime: LocalRuntimeStatus;
+  mintSet: LocalTestMintSet | null;
+  balances: LocalBasketBalances | null;
+  amountError: string;
+  busy: boolean;
+}): { label: string; title: string; run: "issue" | "create" | "deposit"; disabled: boolean } {
+  if (!owner) {
+    return { label: "Connect a local wallet", title: "Connect", run: "issue", disabled: true };
+  }
+  if (runtime.validator !== "online") {
+    return { label: "Start local validator", title: "Validator", run: "issue", disabled: true };
+  }
+  if (runtime.programDeployed !== true) {
+    return { label: "Deploy basket program", title: "Program", run: "issue", disabled: true };
+  }
+  if (busy) {
+    return { label: "Confirming on chain", title: "Submit", run: "deposit", disabled: true };
+  }
+  if (!balances?.snapshot && !mintSet) {
+    return { label: "Issue local test tokens", title: "Issue test tokens", run: "issue", disabled: false };
+  }
+  if (!balances?.snapshot) {
+    return {
+      label: amountError ? "Check amount" : "Create and deposit",
+      title: "Create basket",
+      run: "create",
+      disabled: Boolean(amountError),
+    };
+  }
+  if (balances.snapshot.phase !== "idle") {
+    return { label: "Basket is busy", title: "Busy", run: "deposit", disabled: true };
+  }
+  return {
+    label: amountError ? "Check amount" : "Deposit",
+    title: "Deposit",
+    run: "deposit",
+    disabled: Boolean(amountError),
+  };
 }
 
 function Metric({ label, value }: { label: string; value: string }) {
@@ -310,37 +676,74 @@ function PreviewRow({ label, value }: { label: string; value: string }) {
   return <div className="flex justify-between gap-4"><dt className="text-[var(--muted)]">{label}</dt><dd className="font-medium">{value}</dd></div>;
 }
 
-function ExecutionPanel({ state, completed, count }: {
-  state: Execution;
-  completed: number;
-  count: number;
+function ChainPanel({
+  balances,
+  notice,
+  recovery,
+}: {
+  balances: LocalBasketBalances | null;
+  notice: ChainNotice | null;
+  recovery: ReturnType<typeof nextAction>;
 }) {
-  if (state === "draft") return null;
-  const attention = state === "attention";
-  const exiting = state === "exiting";
+  const snapshot = balances?.snapshot;
   return (
-    <div className={`mt-5 rounded-[6px] border p-4 ${
-      attention ? "border-[var(--red)]/30 bg-[#fff8f5]"
-        : exiting ? "border-[var(--blue)]/25 bg-[#f5f8fc]"
-          : "border-black/10 bg-white"
-    }`}>
-      <div className="flex items-start gap-3">
-        {attention ? <AlertTriangle className="mt-0.5 text-[var(--red)]" size={18} />
-          : <ShieldCheck className="mt-0.5 text-[var(--green)]" size={18} />}
-        <div>
-          <p className="text-sm font-semibold">
-            {attention ? `Leg ${completed + 1} needs attention`
-              : exiting ? "Assets recovered"
-                : state === "complete" ? "Basket complete"
-                  : `${completed} of ${count} legs complete`}
-          </p>
-          <p className="mt-1 text-xs leading-5 text-[var(--muted)]">
-            {attention ? "Completed legs remain recorded. Retry or recover current holdings."
-              : exiting ? "Holdings and residual USDC returned to the test wallet."
-                : "Progress reflects the current operation snapshot."}
-          </p>
+    <div className="space-y-3">
+      <div className="rounded-[6px] border border-black/10 bg-white p-4">
+        <div className="flex items-start gap-3">
+          <ShieldCheck className="mt-0.5 text-[var(--green)]" size={18} />
+          <div className="min-w-0">
+            <p className="text-sm font-semibold">
+              {snapshot
+                ? `Phase ${snapshot.phase} · nonce ${snapshot.operationNonce.toString()}`
+                : "No basket account yet"}
+            </p>
+            <p className="mt-1 text-xs leading-5 text-[var(--muted)]">
+              {snapshot
+                ? `PDA ${shortPublicKey(snapshot.address)}. ${recovery.kind === "prepare-leg"
+                  ? "A leg is open on chain. Browser mock/Jupiter execution is not wired; exit in kind to recover."
+                  : recovery.kind === "finish"
+                    ? "All legs are complete on chain. Finish the operation, then withdraw if needed."
+                    : recovery.kind === "withdraw-holdings"
+                      ? "Exit is active. Withdraw current holdings in kind."
+                      : "Balances below are from confirmed token accounts."}`
+                : "Create a personal basket (ID 1) after issuing local test mints."}
+            </p>
+            {snapshot ? (
+              <ul className="mt-2 space-y-1 font-mono text-[11px] text-[var(--muted)]">
+                {balances?.custody.map((held) => (
+                  <li key={held.address.toBase58()}>
+                    {shortPublicKey(held.mint)} · {held.exists ? formatAmount(held.amount, 6) : "no account"}
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+          </div>
         </div>
       </div>
+      {notice ? (
+        <div className={`rounded-[6px] border p-4 ${
+          notice.tone === "error"
+            ? "border-[var(--red)]/30 bg-[#fff8f5]"
+            : notice.tone === "ok"
+              ? "border-[var(--green)]/25 bg-white"
+              : "border-[var(--blue)]/25 bg-[#f5f8fc]"
+        }`}>
+          <div className="flex items-start gap-3">
+            {notice.tone === "error"
+              ? <AlertTriangle className="mt-0.5 text-[var(--red)]" size={18} />
+              : <ShieldCheck className="mt-0.5 text-[var(--green)]" size={18} />}
+            <div className="min-w-0">
+              <p className="text-sm font-semibold">{notice.title}</p>
+              <p className="mt-1 text-xs leading-5 text-[var(--muted)]">{notice.detail}</p>
+              {notice.signature ? (
+                <p className="mt-1 truncate font-mono text-[11px] text-[var(--muted)]">
+                  sig {notice.signature}
+                </p>
+              ) : null}
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
