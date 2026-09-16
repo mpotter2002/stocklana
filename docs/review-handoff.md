@@ -5,7 +5,7 @@ Updated September 15, 2026.
 ## Current Evidence
 
 - `npm run idl:check` passes: the committed browser IDL matches Anchor output.
-- `npm run check` passes with 18 TypeScript tests.
+- `npm run check` passes with 43 TypeScript tests.
 - `npm run build` passes with Next.js 16.3.5.
 - `cargo fmt --all -- --check` and `cargo test --workspace` pass.
 - `anchor test --skip-local-validator` passes against the persistent validator.
@@ -34,6 +34,8 @@ client's camelCase fields and lowercase phase union.
 - Browser create/deposit/withdraw/exit submit only to the local validator.
 - The public instruction client does not build mock-swap legs.
 - No Jupiter request or CPI path exists yet.
+- Pyth valuation is off-chain display via Hermes or labeled local-test quotes.
+  There is no on-chain Pyth receiver integration yet.
 - No mainnet/devnet deployment or live asset address is configured.
 - The mock-swap program remains local-only.
 
