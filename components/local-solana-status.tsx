@@ -171,59 +171,63 @@ export function LocalSolanaStatus({
   return (
     <div className="flex flex-wrap items-center justify-end gap-2">
       <Badge variant="outline">LOCAL TEST</Badge>
-      <StatusChip
-        label="Validator"
-        state={checking ? "checking" : runtime.validator === "online" ? "ok" : "warn"}
-        value={validatorValue}
-      />
-      <StatusChip
-        label="Program"
-        state={checking ? "checking" : runtime.programDeployed ? "ok" : "warn"}
-        value={programValue}
-      />
-      <StatusChip
-        label="Wallet"
-        state={
-          wallet.state === "connected"
-            ? "ok"
-            : wallet.state === "connecting"
-              ? "checking"
-              : "warn"
-        }
-        value={walletLabel(wallet)}
-      />
-      {walletError ? <p role="alert" className="text-xs text-destructive">{walletError}</p> : null}
-      {wallet.state !== "missing" ? (
-        <Button
-          disabled={wallet.state === "connecting"}
-          onClick={() => void toggleWallet()}
-          size="sm"
-          type="button"
-          variant={wallet.state === "connected" ? "outline" : "default"}
-        >
-          {wallet.state === "connecting" ? (
-            <Spinner data-icon="inline-start" />
-          ) : (
-            <Wallet data-icon="inline-start" />
-          )}
-          {wallet.state === "connected" ? "Disconnect" : "Connect wallet"}
-        </Button>
-      ) : null}
-      <Tooltip>
-        <TooltipTrigger asChild>
+      <div className="flex flex-wrap items-center gap-2">
+        <StatusChip
+          label="Validator"
+          state={checking ? "checking" : runtime.validator === "online" ? "ok" : "warn"}
+          value={validatorValue}
+        />
+        <StatusChip
+          label="Program"
+          state={checking ? "checking" : runtime.programDeployed ? "ok" : "warn"}
+          value={programValue}
+        />
+        <StatusChip
+          label="Wallet"
+          state={
+            wallet.state === "connected"
+              ? "ok"
+              : wallet.state === "connecting"
+                ? "checking"
+                : "warn"
+          }
+          value={walletLabel(wallet)}
+        />
+      </div>
+      <div className="flex items-center gap-2">
+        {walletError ? <p role="alert" className="text-xs text-destructive">{walletError}</p> : null}
+        {wallet.state !== "missing" ? (
           <Button
-            aria-label="Refresh local connection"
-            disabled={checking}
-            onClick={() => void refresh()}
-            size="icon-sm"
+            disabled={wallet.state === "connecting"}
+            onClick={() => void toggleWallet()}
+            size="sm"
             type="button"
-            variant="outline"
+            variant={wallet.state === "connected" ? "outline" : "default"}
           >
-            <RefreshCw className={checking ? "animate-spin" : undefined} />
+            {wallet.state === "connecting" ? (
+              <Spinner data-icon="inline-start" />
+            ) : (
+              <Wallet data-icon="inline-start" />
+            )}
+            {wallet.state === "connected" ? "Disconnect" : "Connect wallet"}
           </Button>
-        </TooltipTrigger>
-        <TooltipContent>Refresh local connection</TooltipContent>
-      </Tooltip>
+        ) : null}
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              aria-label="Refresh local connection"
+              disabled={checking}
+              onClick={() => void refresh()}
+              size="icon-sm"
+              type="button"
+              variant="outline"
+            >
+              <RefreshCw className={checking ? "animate-spin" : undefined} />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>Refresh local connection</TooltipContent>
+        </Tooltip>
+      </div>
     </div>
   );
 }
