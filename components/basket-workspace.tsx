@@ -36,6 +36,7 @@ import { JupiterRail } from "./jupiter-rail";
 import { LocalSolanaStatus } from "./local-solana-status";
 import { OrderTicket, type ChainNotice } from "./order-ticket";
 import { PortfolioSummary } from "./portfolio-summary";
+import { ThemeToggle } from "./theme-toggle";
 
 const UNKNOWN_RUNTIME: LocalRuntimeStatus = {
   validator: "offline",
@@ -360,10 +361,13 @@ export function BasketWorkspace() {
             <p className="font-heading text-2xl italic tracking-tight">Stocklana</p>
             <p className="text-sm text-muted-foreground">Custom baskets</p>
           </div>
-          <LocalSolanaStatus
-            onOwnerChange={handleOwnerChange}
-            onRuntimeChange={setRuntime}
-          />
+          <div className="flex flex-wrap items-center justify-end gap-2">
+            <LocalSolanaStatus
+              onOwnerChange={handleOwnerChange}
+              onRuntimeChange={setRuntime}
+            />
+            <ThemeToggle />
+          </div>
         </div>
       </header>
 
