@@ -5,6 +5,24 @@ import { PublicKey } from "@solana/web3.js";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { formatAmount, parseAmount } from "../lib/amounts.ts";
 import { shortPublicKey } from "../lib/solana/injected-wallet";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Field,
+  FieldDescription,
+  FieldError,
+  FieldLabel,
+} from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
+import { cn } from "@/lib/utils";
 
 type CatalogAsset = {
   mint: string;
@@ -138,30 +156,31 @@ export function JupiterRail({
   }
 
   return (
-    <section className="mt-8 rounded-[6px] border border-black/10 bg-white">
-      <div className="flex flex-wrap items-start justify-between gap-3 border-b border-black/10 px-4 py-3">
-        <div>
-          <p className="text-xs font-semibold uppercase text-muted-foreground">
-            Inventory rail
-          </p>
-          <h2 className="text-base font-semibold">Jupiter xStocks and indexes</h2>
+    <Card>
+      <CardHeader className="border-b">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="flex min-w-0 flex-col gap-1">
+            <CardDescription className="text-[11px] font-medium tracking-[0.14em] uppercase">
+              Inventory rail
+            </CardDescription>
+            <CardTitle>Jupiter xStocks and indexes</CardTitle>
+          </div>
+          <div className="flex items-center gap-2">
+            <Badge variant="outline">{sourceBadge}</Badge>
+            <Button
+              aria-label="Refresh Jupiter inventory"
+              onClick={() => void refresh()}
+              size="icon-sm"
+              type="button"
+              variant="outline"
+            >
+              <RefreshCw className={loading ? "animate-spin" : undefined} />
+            </Button>
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          <span className="border border-black/15 px-2 py-1 text-[11px] font-medium text-muted-foreground">
-            {sourceBadge}
-          </span>
-          <button
-            aria-label="Refresh Jupiter inventory"
-            className="grid size-8 place-items-center rounded-[6px] border border-black/15 hover:bg-black/5"
-            onClick={() => void refresh()}
-            type="button"
-          >
-            <RefreshCw className={loading ? "animate-spin" : ""} size={14} />
-          </button>
-        </div>
-      </div>
+      </CardHeader>
 
-      <div className="space-y-3 px-4 py-4 text-sm">
+      <CardContent className="flex flex-col gap-3">
         <p className="text-xs leading-5 text-muted-foreground">
           Jupiter is the primary inventory and execution rail. Quotes below are
           `/swap/v2/build` responses, not fills. Local test mints stay on the
@@ -208,7 +227,7 @@ export function JupiterRail({
             <p className="mb-2 text-xs font-semibold uppercase text-muted-foreground">
               Backpack backup markets
             </p>
-            <ul className="space-y-1 text-xs text-muted-foreground">
+            <ul className="flex flex-col gap-1 text-xs text-muted-foreground">
               {catalog?.backpack.map((market) => (
                 <li key={market.symbol}>
                   {market.symbol} · {market.baseSymbol}/{market.quoteSymbol} · no mint
@@ -218,65 +237,72 @@ export function JupiterRail({
           </div>
         ) : null}
 
-        <div className="grid gap-3 border-t border-black/10 pt-4 md:grid-cols-[1fr_auto] md:items-end">
-          <label className="block text-xs font-semibold uppercase text-muted-foreground">
-            Quote amount
-            <input
-              className="mt-2 h-11 w-full rounded-[6px] border border-black/15 px-3 font-mono text-sm outline-none focus:border-ring"
+        <div className="grid gap-3 border-t pt-4 md:grid-cols-[1fr_auto] md:items-end">
+          <Field data-invalid={amountError ? true : undefined}>
+            <FieldLabel htmlFor="jupiter-quote-amount">Quote amount</FieldLabel>
+            <Input
+              aria-invalid={amountError ? true : undefined}
+              className="h-11 font-mono"
+              id="jupiter-quote-amount"
               inputMode="decimal"
               onChange={(event) => setAmount(event.target.value)}
               value={amount}
             />
-          </label>
-          <button
-            className="inline-flex h-11 items-center justify-center gap-2 rounded-[6px] bg-primary px-4 text-sm font-semibold text-white disabled:bg-black/25"
+            {amountError ? (
+              <FieldError>{amountError}</FieldError>
+            ) : (
+              <FieldDescription>
+                {funding
+                  ? `Spend ${funding.symbol} (${shortPublicKey(new PublicKey(funding.mint))}) for a Jupiter quote. Min out is otherAmountThreshold, not a fill.`
+                  : "Jupiter did not return a verified USDC mint, so routing is disabled."}
+              </FieldDescription>
+            )}
+          </Field>
+          <Button
+            className="h-11"
             disabled={quoting || !selected || !funding || Boolean(amountError) || !rawAmount || rawAmount <= 0n}
             onClick={() => void previewRoute()}
             type="button"
           >
-            {quoting ? <RefreshCw className="animate-spin" size={14} /> : <ArrowRight size={14} />}
+            {quoting ? (
+              <RefreshCw className="animate-spin" data-icon="inline-start" />
+            ) : (
+              <ArrowRight data-icon="inline-start" />
+            )}
             Preview Jupiter route
-          </button>
+          </Button>
         </div>
-        <p className={`text-xs ${amountError ? "text-destructive" : "text-muted-foreground"}`}>
-          {amountError
-            || (funding
-              ? `Spend ${funding.symbol} (${shortPublicKey(new PublicKey(funding.mint))}) for a Jupiter quote. Min out is otherAmountThreshold, not a fill.`
-              : "Jupiter did not return a verified USDC mint, so routing is disabled.")}
-        </p>
 
         {quote ? (
-          <div className="rounded-[6px] border border-black/10 bg-[#f7f8f5] p-3">
-            <div className="flex items-start gap-2">
-              <ShieldCheck className="mt-0.5 text-success" size={16} />
-              <div className="min-w-0 text-xs leading-5">
-                <p className="font-semibold">
-                  {quote.error ? "Jupiter quote unavailable" : "Jupiter quote (not a fill)"}
-                </p>
-                {quote.error ? (
-                  <p className="mt-1 text-muted-foreground">{quote.error}</p>
-                ) : (
-                  <ul className="mt-1 space-y-1 font-mono text-[11px] text-muted-foreground">
-                    <li>in {quote.inAmount} → quoted out {quote.outAmount}</li>
-                    <li>min out {quote.otherAmountThreshold} · {quote.swapMode} · {quote.slippageBps} bps</li>
-                    <li>
-                      venues {quote.routePlan?.map((hop) => hop.label).join(", ") || "--"}
-                    </li>
-                    <li>program {quote.swapInstruction?.programId}</li>
-                    <li>
-                      accounts {quote.swapInstruction?.accounts.length ?? 0}
-                      {funding && quote.inAmount
-                        ? ` · display in ${formatAmount(BigInt(quote.inAmount), funding.decimals)} ${funding.symbol}`
-                        : ""}
-                    </li>
-                  </ul>
-                )}
-              </div>
-            </div>
-          </div>
+          <Alert>
+            <ShieldCheck />
+            <AlertTitle>
+              {quote.error ? "Jupiter quote unavailable" : "Jupiter quote (not a fill)"}
+            </AlertTitle>
+            <AlertDescription>
+              {quote.error ? (
+                quote.error
+              ) : (
+                <ul className="mt-1 flex flex-col gap-1 font-mono text-[11px]">
+                  <li>in {quote.inAmount} → quoted out {quote.outAmount}</li>
+                  <li>min out {quote.otherAmountThreshold} · {quote.swapMode} · {quote.slippageBps} bps</li>
+                  <li>
+                    venues {quote.routePlan?.map((hop) => hop.label).join(", ") || "--"}
+                  </li>
+                  <li>program {quote.swapInstruction?.programId}</li>
+                  <li>
+                    accounts {quote.swapInstruction?.accounts.length ?? 0}
+                    {funding && quote.inAmount
+                      ? ` · display in ${formatAmount(BigInt(quote.inAmount), funding.decimals)} ${funding.symbol}`
+                      : ""}
+                  </li>
+                </ul>
+              )}
+            </AlertDescription>
+          </Alert>
         ) : null}
-      </div>
-    </section>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -296,16 +322,17 @@ function AssetGroup({
       <p className="mb-2 text-xs font-semibold uppercase text-muted-foreground">
         {title} · {assets.length}
       </p>
-      <div className="max-h-56 overflow-auto rounded-[6px] border border-black/10">
+      <div className="max-h-56 overflow-auto rounded-lg border">
         {assets.length === 0 ? (
           <p className="px-3 py-4 text-xs text-muted-foreground">None from Jupiter.</p>
         ) : assets.map((asset) => {
           const selected = asset.mint === selectedMint;
           return (
             <button
-              className={`grid w-full grid-cols-[1fr_auto] items-center border-b border-black/8 px-3 py-2 text-left last:border-b-0 hover:bg-[#f7f8f5] ${
-                selected ? "bg-[#f0f2ef]" : ""
-              }`}
+              className={cn(
+                "grid w-full grid-cols-[1fr_auto] items-center border-b px-3 py-2 text-left last:border-b-0 hover:bg-muted",
+                selected && "bg-accent",
+              )}
               key={asset.mint}
               onClick={() => onSelect(asset.mint)}
               type="button"

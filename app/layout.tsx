@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import { IBM_Plex_Mono, IBM_Plex_Sans, Newsreader } from "next/font/google";
+import { ThemeProvider } from "@/components/theme-provider";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
+import { ThemePreference } from "@/lib/ui/theme-preference";
 import "./globals.css";
 
 const newsreader = Newsreader({
@@ -42,9 +44,19 @@ export default function RootLayout({
         ibmMono.variable,
         "font-sans",
       )}
+      suppressHydrationWarning
     >
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: ThemePreference.blockingScript(),
+          }}
+        />
+      </head>
       <body>
-        <TooltipProvider>{children}</TooltipProvider>
+        <ThemeProvider>
+          <TooltipProvider>{children}</TooltipProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

@@ -11,6 +11,7 @@ import { BasketView } from "../lib/ui/basket-view.ts";
 const ONLINE: LocalRuntimeStatus = {
   validator: "online",
   programDeployed: true,
+  jupiterSwapDeployed: null,
   slot: 12,
   version: "2.3.0",
 };
@@ -43,7 +44,7 @@ test("primary action stays blocked until wallet, validator, and program are read
   assert.equal(
     BasketView.primaryAction({
       owner: null,
-      runtime: { validator: "offline", programDeployed: null, slot: null, version: null },
+      runtime: { validator: "offline", programDeployed: null, jupiterSwapDeployed: null, slot: null, version: null },
       mintSet: null,
       balances: null,
       amountError: "",
@@ -54,7 +55,7 @@ test("primary action stays blocked until wallet, validator, and program are read
   assert.equal(
     BasketView.primaryAction({
       owner,
-      runtime: { validator: "offline", programDeployed: null, slot: null, version: null },
+      runtime: { validator: "offline", programDeployed: null, jupiterSwapDeployed: null, slot: null, version: null },
       mintSet: null,
       balances: null,
       amountError: "",
@@ -65,7 +66,7 @@ test("primary action stays blocked until wallet, validator, and program are read
   assert.equal(
     BasketView.primaryAction({
       owner,
-      runtime: { validator: "online", programDeployed: false, slot: 1, version: "2.3.0" },
+      runtime: { validator: "online", programDeployed: false, jupiterSwapDeployed: null, slot: 1, version: "2.3.0" },
       mintSet: null,
       balances: null,
       amountError: "",
