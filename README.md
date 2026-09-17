@@ -1,12 +1,19 @@
 # Stocklana
 
-Custom tokenized-stock baskets. Local foundation, not a live trading product.
+Custom tokenized-equity baskets on Solana. Localnet prototype, not a live
+trading product. There is **no hosted demo URL** and no mainnet path.
+
+**Hackathon judges:** start at [JUDGES.md](./JUDGES.md) (one sitting: run from
+**Run** below, then wallet → create/deposit → Pyth → Jupiter quote → theme).
+Form copy and links: [SUBMISSION.md](./SUBMISSION.md). Recording checklist:
+[DEMO.md](./DEMO.md). Submissions close **Friday 25 September 2026, 4:00 PM ET**.
 
 ## How to test the prototype
 
-One sitting for Michael: local create/deposit, Pyth display quotes, the Jupiter
-inventory/quote rail, and a usable UI. This is **localnet only**. There is no
-hosted demo URL and no mainnet path.
+One sitting: local create/deposit, Pyth display quotes, the Jupiter
+inventory/quote rail, theme toggle, and a usable UI. This is **localnet only**.
+Judges can follow the shorter click path in [JUDGES.md](./JUDGES.md); the
+sections below are the same flow with more detail.
 
 ### Before you start
 
@@ -112,15 +119,16 @@ Narrow to about **390px** and check:
 - Jupiter inventory status URLs wrap; lists stay readable
 - No horizontal overflow
 
-**Appearance:** the shipped UI is **light mode**. Dark-mode CSS tokens exist on
-shadcn primitives, but there is no theme toggle on `main` yet — dark mode is in
-flight.
+**Appearance:** icon button on the wordmark row (sun / moon / monitor). It
+cycles **System → Light → Dark**. Default is System (`prefers-color-scheme`).
+The choice is stored in `localStorage` as `stocklana.theme`.
 
 ### Out of this sitting
 
-- PreStocks / Tessera recipe options
+- PreStocks / Tessera recipe options (not in this submission)
 - Mainnet, funded live wallets, or a hosted deploy
-- Landing a Jupiter swap on localnet
+- Landing a Jupiter swap on localnet (quote/honest limits only; see
+  [JUDGES.md](./JUDGES.md))
 
 TypeScript checks without a validator: `npm run check`. Rust / Anchor tests are
 separate (`cargo test --workspace`, `anchor test --skip-build`).
@@ -318,6 +326,9 @@ versions compatible with Agave's SBF Rust 1.84 toolchain. See
 - `lib/pyth/`: official feed IDs, Hermes client, hermetic quotes, and holdings
   valuation.
 - `docs/first-milestone.md`: completed milestone and next integration target.
+- `JUDGES.md`: one-sitting hackathon judge path (localnet limits and click path).
+- `SUBMISSION.md`: form copy, links, and bounty honesty for Stocklana.
+- `DEMO.md`: short-video recording checklist. There is no hosted demo.
 
 The product plan remains at `../Stocklana-Custom-Baskets-Plan.md`.
 
