@@ -35,8 +35,9 @@
 - Jupiter Tokens API inventory for xStocks and indexes, `/swap/v2/build` quote
   parsing, and an on-chain `execute_jupiter_leg` CPI that constrains the
   documented Jupiter v6 program, basket custody, spend, and minimum output.
-- PreStocks and Tessera recipe previews from documented issuer catalogs, with
-  labeled recorded fallback when an API is blocked. Previews are not creates.
+- PreStocks-only recipe previews from the documented PreStocks catalog, with
+  labeled recorded fallback when that API is blocked. Previews are not creates.
+  Tessera is a related link-out only.
 
 The onchain nonce and completed-leg state provide replay protection. The
 TypeScript recovery helper remains a presentation/client decision aid and is
@@ -53,9 +54,10 @@ not a substitute for those program checks.
 - Jupiter catalog and `/build` quotes are labeled live-metadata / quote-only.
   They are not fills and are not Pyth marks. Local test mints are not Jupiter
   markets.
-- PreStocks and Tessera recipe previews use documented issuer catalogs (live or
+- PreStocks recipe previews use the documented PreStocks catalog (live or
   labeled recorded fallback). They are not localnet creates, not fills, and not
-  Pyth marks. The two issuers are never mixed in one recipe.
+  Pyth marks. Non-PreStocks pre-IPO tokens, including Tessera, are omitted from
+  this path.
 - Default basket builds now exclude `local-testing`; only explicitly opted-in
   local builds contain mock execution. Follow the commands in README.md.
 - Creation now requires remaining accounts in exact order: funding mint, then
@@ -73,9 +75,9 @@ not a substitute for those program checks.
    Jupiter v6 and the route AMMs. Do not assume a live devnet xStocks market
    exists. Keep mock-swap evidence separate from Jupiter evidence.
 2. Do not treat Jupiter `usdPrice` as a basket mark; valuation stays on Pyth.
-3. PreStocks/Tessera recipe previews are in the UI. Creating those baskets still
-   needs a live-asset eligibility review, mint-extension policy, and mints that
-   actually exist on the target cluster.
+3. PreStocks recipe previews are in the UI. Creating those baskets still needs
+   a live-asset eligibility review, mint-extension policy, and mints that
+   actually exist on the target cluster. Keep that path PreStocks-only.
 
 Local create, deposit, withdraw, and in-kind exit can now be signed in the
 browser against a local validator. Jupiter inventory and `/build` quotes are
@@ -101,5 +103,3 @@ and AMMs are present.
 - Pyth Hermes: https://docs.pyth.network/price-feeds/core/fetch-price-updates
 - Token amounts: https://solana.com/docs/tokens/extensions/scaled-ui-amount
 - PreStocks catalog: https://prestocks.com/api/prestocks
-- Tessera token details: https://rest-api.tessera.pe/v1/public/token-details
-- Tessera on-chain programs: https://docs.tessera.pe/technicals/on-chain-programs

@@ -1,5 +1,5 @@
 import { equalWeights } from "../allocation.ts";
-import type { BasketRecipePreview, RecipeAsset, RecipeIssuer } from "./types.ts";
+import type { BasketRecipePreview, RecipeAsset } from "./types.ts";
 
 const PRESTOCKS_TEMPLATES: { id: string; title: string; symbols: readonly string[] }[] = [
   {
@@ -24,37 +24,16 @@ const PRESTOCKS_TEMPLATES: { id: string; title: string; symbols: readonly string
   },
 ];
 
-const TESSERA_TEMPLATES: { id: string; title: string; symbols: readonly string[] }[] = [
-  {
-    id: "tessera-openai-kalshi",
-    title: "T-OpenAI + T-Kalshi",
-    symbols: ["tOpenAI", "tKalshi"],
-  },
-  {
-    id: "tessera-openai-spacex",
-    title: "T-OpenAI + T-SpaceX",
-    symbols: ["tOpenAI", "tSpaceX"],
-  },
-  {
-    id: "tessera-openai-kalshi-spacex",
-    title: "T-OpenAI + T-Kalshi + T-SpaceX",
-    symbols: ["tOpenAI", "tKalshi", "tSpaceX"],
-  },
-];
-
-const ADMISSION: Record<RecipeIssuer, string> = {
-  prestocks:
-    "Mainnet catalog only. PreStocks list API does not include token program or mint extensions. create_basket still requires extension-free mints that exist on this validator. Preview is not a create and not a fill.",
-  tessera:
-    "Mainnet catalog only. Tessera docs list Token-2022 mints with transfer-fee and other extensions; create_basket rejects mint extensions. These mints are not on localnet. Preview is not a create and not a fill.",
-};
+const PRESTOCKS_ADMISSION =
+  "PreStocks-only catalog. Mainnet list API does not include token program or mint extensions. create_basket still requires extension-free mints that exist on this validator. Preview is not a create and not a fill. Non-PreStocks pre-IPO tokens are omitted from this path.";
 
 export class RecipeComposer {
-  static fromAssets(issuer: RecipeIssuer, assets: RecipeAsset[]): BasketRecipePreview[] {
-    const templates = issuer === "prestocks" ? PRESTOCKS_TEMPLATES : TESSERA_TEMPLATES;
-    const bySymbol = new Map(assets.filter((asset) => asset.issuer === issuer).map((asset) => [asset.symbol, asset]));
+  static fromPreStocks(assets: RecipeAsset[]): BasketRecipePreview[] {
+    const bySymbol = new Map(
+      assets.filter((asset) => asset.issuer === "prestocks").map((asset) => [asset.symbol, asset]),
+    );
     const recipes: BasketRecipePreview[] = [];
-    for (const template of templates) {
+    for (const template of PRESTOCKS_TEMPLATES) {
       const selected: RecipeAsset[] = [];
       let missing = false;
       for (const symbol of template.symbols) {
@@ -68,14 +47,14 @@ export class RecipeComposer {
       if (missing) continue;
       recipes.push({
         id: template.id,
-        issuer,
+        issuer: "prestocks",
         title: template.title,
         symbols: [...template.symbols],
         assets: selected,
         targetBps: equalWeights(selected.length),
         executableOnLocalnet: false,
         notAFill: true,
-        admission: ADMISSION[issuer],
+        admission: PRESTOCKS_ADMISSION,
       });
     }
     return recipes;

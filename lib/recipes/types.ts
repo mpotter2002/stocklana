@@ -1,6 +1,6 @@
 import type { PublicKey } from "@solana/web3.js";
 
-export type RecipeIssuer = "prestocks" | "tessera";
+export type RecipeIssuer = "prestocks";
 
 export type RecipeCatalogLabel = "live" | "fixture" | "unavailable";
 
@@ -36,5 +36,4 @@ export interface IssuerCatalog {
 
 export interface RecipeSnapshot {
   prestocks: IssuerCatalog;
-  tessera: IssuerCatalog;
 }

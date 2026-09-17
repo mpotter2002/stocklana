@@ -7,8 +7,7 @@ import { shortPublicKey } from "../lib/solana/injected-wallet";
 import {
   PEGLENS_RELATED_URL,
   PRESTOCKS_PRODUCTS_URL,
-  TESSERA_APP_URL,
-  TESSERA_DOCS_URL,
+  TESSERA_RELATED_URL,
 } from "../lib/recipes/constants.ts";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -26,14 +25,14 @@ type RecipeAssetJson = {
   mint: string;
   symbol: string;
   name: string;
-  issuer: "prestocks" | "tessera";
+  issuer: "prestocks";
   tokenProgram: string | null;
   decimals: number | null;
 };
 
 type RecipeJson = {
   id: string;
-  issuer: "prestocks" | "tessera";
+  issuer: "prestocks";
   title: string;
   symbols: string[];
   targetBps: number[];
@@ -44,7 +43,7 @@ type RecipeJson = {
 };
 
 type IssuerPayload = {
-  issuer: "prestocks" | "tessera";
+  issuer: "prestocks";
   label: "live" | "fixture" | "unavailable";
   detail: string;
   assets: RecipeAssetJson[];
@@ -53,14 +52,12 @@ type IssuerPayload = {
 
 type CatalogPayload = {
   prestocks: IssuerPayload;
-  tessera: IssuerPayload;
 };
 
-function badgeFor(issuer: "prestocks" | "tessera", label: IssuerPayload["label"]): string {
-  const name = issuer === "prestocks" ? "PRESTOCKS" : "TESSERA";
-  if (label === "live") return `${name} LIVE`;
-  if (label === "fixture") return `${name} FIXTURE`;
-  return `${name} UNAVAILABLE`;
+function badgeFor(label: IssuerPayload["label"]): string {
+  if (label === "live") return "PRESTOCKS LIVE";
+  if (label === "fixture") return "PRESTOCKS FIXTURE";
+  return "PRESTOCKS UNAVAILABLE";
 }
 
 export function RecipeRail() {
@@ -77,7 +74,7 @@ export function RecipeRail() {
       const body = await response.json() as CatalogPayload;
       setCatalog(body);
       setSelectedId((current) => {
-        const recipes = [...(body.prestocks.recipes), ...(body.tessera.recipes)];
+        const recipes = body.prestocks.recipes;
         if (current && recipes.some((recipe) => recipe.id === current)) return current;
         return recipes[0]?.id ?? null;
       });
@@ -93,9 +90,7 @@ export function RecipeRail() {
     void refresh();
   }, [refresh]);
 
-  const recipes = catalog
-    ? [...catalog.prestocks.recipes, ...catalog.tessera.recipes]
-    : [];
+  const recipes = catalog?.prestocks.recipes ?? [];
   const selected = recipes.find((recipe) => recipe.id === selectedId) ?? null;
 
   return (
@@ -106,17 +101,14 @@ export function RecipeRail() {
             <CardDescription className="text-[11px] font-medium tracking-[0.14em] uppercase">
               Recipe rail
             </CardDescription>
-            <CardTitle>PreStocks and Tessera recipes</CardTitle>
+            <CardTitle>PreStocks recipes</CardTitle>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <Badge variant="outline">
-              {catalog ? badgeFor("prestocks", catalog.prestocks.label) : "UNCHECKED"}
-            </Badge>
-            <Badge variant="outline">
-              {catalog ? badgeFor("tessera", catalog.tessera.label) : "UNCHECKED"}
+              {catalog ? badgeFor(catalog.prestocks.label) : "UNCHECKED"}
             </Badge>
             <Button
-              aria-label="Refresh PreStocks and Tessera recipes"
+              aria-label="Refresh PreStocks recipes"
               onClick={() => void refresh()}
               size="icon-sm"
               type="button"
@@ -130,46 +122,62 @@ export function RecipeRail() {
 
       <CardContent className="flex flex-col gap-3">
         <p className="text-xs leading-5 text-muted-foreground">
-          These are 2–3 asset basket <span className="font-medium text-foreground">previews</span> from
-          issuer catalogs. They are not local test mints, not Jupiter xStocks, not Pyth marks,
-          and not fills. PreStocks and Tessera stay on separate rails — mixing other pre-IPO
-          tokens would make a PreStocks bounty claim ineligible. Local create/deposit still uses
-          issued validator mints.{" "}
-          <a className="underline underline-offset-3" href={PEGLENS_RELATED_URL} rel="noreferrer" target="_blank">
-            PegLens
-          </a>{" "}
-          links these issuers as related; this rail surfaces recipes in-product.
+          PreStocks-only 2–3 asset basket{" "}
+          <span className="font-medium text-foreground">previews</span> from
+          `GET /api/prestocks`. They are not local test mints, not Jupiter xStocks,
+          not Pyth marks, and not fills. Non-PreStocks pre-IPO tokens (including
+          Tessera) are omitted from this path so the PreStocks bounty story stays
+          eligible. Local create/deposit still uses issued validator mints.
         </p>
         <p className="text-xs leading-5 break-words text-muted-foreground">
-          {catalog
-            ? `${catalog.prestocks.detail} · ${catalog.tessera.detail}`
-            : catalogError ?? (loading ? "Loading PreStocks and Tessera catalogs…" : "")}
+          {catalog?.prestocks.detail
+            ?? catalogError
+            ?? (loading ? "Loading PreStocks catalog…" : "")}
         </p>
 
-        <div className="grid gap-4 md:grid-cols-2">
-          <IssuerGroup
-            title="PreStocks"
-            catalog={catalog?.prestocks ?? null}
-            selectedId={selectedId}
-            onSelect={setSelectedId}
-            productsUrl={PRESTOCKS_PRODUCTS_URL}
-          />
-          <IssuerGroup
-            title="Tessera"
-            catalog={catalog?.tessera ?? null}
-            selectedId={selectedId}
-            onSelect={setSelectedId}
-            productsUrl={TESSERA_APP_URL}
-          />
+        <div>
+          <p className="mb-2 text-xs font-semibold uppercase text-muted-foreground">
+            PreStocks · {recipes.length} recipes · {catalog?.prestocks.assets.length ?? 0} tokens
+          </p>
+          <div className="max-h-56 overflow-auto rounded-lg border">
+            {recipes.length === 0 ? (
+              <p className="px-3 py-4 text-xs text-muted-foreground">
+                {catalog?.prestocks.label === "unavailable"
+                  ? "PreStocks catalog is unavailable. No mints invented."
+                  : "No PreStocks recipes from the current catalog."}
+              </p>
+            ) : recipes.map((recipe) => {
+              const selectedRecipe = recipe.id === selectedId;
+              return (
+                <button
+                  className={cn(
+                    "grid w-full grid-cols-[1fr_auto] items-center border-b px-3 py-2 text-left last:border-b-0 hover:bg-muted",
+                    selectedRecipe && "bg-accent",
+                  )}
+                  key={recipe.id}
+                  onClick={() => setSelectedId(recipe.id)}
+                  type="button"
+                >
+                  <span className="min-w-0">
+                    <span className="block truncate text-sm font-semibold">{recipe.title}</span>
+                    <span className="block truncate text-[11px] text-muted-foreground">
+                      {recipe.symbols.join(" + ")} · {recipe.targetBps.join("/")} bps
+                    </span>
+                  </span>
+                  <span className="text-[11px] text-muted-foreground">preview</span>
+                </button>
+              );
+            })}
+          </div>
         </div>
 
         {selected ? (
           <Alert>
             <ShieldCheck />
-            <AlertTitle>Recipe preview (not a create, not a fill)</AlertTitle>
+            <AlertTitle>PreStocks recipe preview (not a create, not a fill)</AlertTitle>
             <AlertDescription>
               <ul className="mt-1 flex flex-col gap-1 font-mono text-[11px]">
-                <li>{selected.title} · {selected.issuer}</li>
+                <li>{selected.title} · prestocks-only</li>
                 <li>weights {selected.targetBps.join(" / ")} bps · equal recipe</li>
                 <li>localnet create {selected.executableOnLocalnet ? "yes" : "N/A"}</li>
                 {selected.assets.map((asset) => (
@@ -184,80 +192,26 @@ export function RecipeRail() {
           </Alert>
         ) : (
           <p className="text-xs text-muted-foreground">
-            No recipe is available to preview. The UI will not invent PreStocks or Tessera mints.
+            No PreStocks recipe is available to preview. The UI will not invent mints.
           </p>
         )}
 
         <p className="text-xs leading-5 text-muted-foreground">
-          Tessera docs:{" "}
-          <a className="underline underline-offset-3" href={TESSERA_DOCS_URL} rel="noreferrer" target="_blank">
-            docs.tessera.pe
-          </a>
-          . PreStocks products:{" "}
+          PreStocks products:{" "}
           <a className="underline underline-offset-3" href={PRESTOCKS_PRODUCTS_URL} rel="noreferrer" target="_blank">
             prestocks.com/products
           </a>
-          .
+          . Related (not this bounty path):{" "}
+          <a className="underline underline-offset-3" href={PEGLENS_RELATED_URL} rel="noreferrer" target="_blank">
+            PegLens
+          </a>
+          {", "}
+          <a className="underline underline-offset-3" href={TESSERA_RELATED_URL} rel="noreferrer" target="_blank">
+            Tessera
+          </a>
+          {" "}— link-outs only; those tokens are not in these recipes.
         </p>
       </CardContent>
     </Card>
-  );
-}
-
-function IssuerGroup({
-  title,
-  catalog,
-  selectedId,
-  onSelect,
-  productsUrl,
-}: {
-  title: string;
-  catalog: IssuerPayload | null;
-  selectedId: string | null;
-  onSelect: (id: string) => void;
-  productsUrl: string;
-}) {
-  const recipes = catalog?.recipes ?? [];
-  return (
-    <div>
-      <p className="mb-2 text-xs font-semibold uppercase text-muted-foreground">
-        {title} · {recipes.length} recipes · {catalog?.assets.length ?? 0} tokens
-      </p>
-      <div className="max-h-56 overflow-auto rounded-lg border">
-        {recipes.length === 0 ? (
-          <p className="px-3 py-4 text-xs text-muted-foreground">
-            {catalog?.label === "unavailable"
-              ? `${title} catalog is unavailable. No mints invented.`
-              : `No ${title} recipes from the current catalog.`}
-          </p>
-        ) : recipes.map((recipe) => {
-          const selected = recipe.id === selectedId;
-          return (
-            <button
-              className={cn(
-                "grid w-full grid-cols-[1fr_auto] items-center border-b px-3 py-2 text-left last:border-b-0 hover:bg-muted",
-                selected && "bg-accent",
-              )}
-              key={recipe.id}
-              onClick={() => onSelect(recipe.id)}
-              type="button"
-            >
-              <span className="min-w-0">
-                <span className="block truncate text-sm font-semibold">{recipe.title}</span>
-                <span className="block truncate text-[11px] text-muted-foreground">
-                  {recipe.symbols.join(" + ")} · {recipe.targetBps.join("/")} bps
-                </span>
-              </span>
-              <span className="text-[11px] text-muted-foreground">preview</span>
-            </button>
-          );
-        })}
-      </div>
-      <p className="mt-2 text-[11px] leading-4 text-muted-foreground">
-        <a className="underline underline-offset-3" href={productsUrl} rel="noreferrer" target="_blank">
-          {title} product page
-        </a>
-      </p>
-    </div>
   );
 }

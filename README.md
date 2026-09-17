@@ -4,15 +4,15 @@ Custom tokenized-equity baskets on Solana. Localnet prototype, not a live
 trading product. There is **no hosted demo URL** and no mainnet path.
 
 **Hackathon judges:** start at [JUDGES.md](./JUDGES.md) (one sitting: run from
-**Run** below, then wallet → create/deposit → Pyth → Jupiter quote → PreStocks/
-Tessera recipe preview → theme).
+**Run** below, then wallet → create/deposit → Pyth → Jupiter quote → PreStocks
+recipe preview → theme).
 Form copy and links: [SUBMISSION.md](./SUBMISSION.md). Recording checklist:
 [DEMO.md](./DEMO.md). Submissions close **Friday 25 September 2026, 4:00 PM ET**.
 
 ## How to test the prototype
 
 One sitting: local create/deposit, Pyth display quotes, the Jupiter
-inventory/quote rail, PreStocks/Tessera recipe previews, theme toggle, and a
+inventory/quote rail, PreStocks recipe previews, theme toggle, and a
 usable UI. This is **localnet only**.
 Judges can follow the shorter click path in [JUDGES.md](./JUDGES.md); the
 sections below are the same flow with more detail.
@@ -109,35 +109,31 @@ route AMMs, so a swap will not land here. Quotes are not fills. If a basket were
 mid-operation, recovery is **Begin exit** then **Withdraw in kind** — in-kind
 exit does not depend on Jupiter or Pyth.
 
-### 5. PreStocks and Tessera recipe rail
+### 5. PreStocks recipe rail
 
-Scroll past Jupiter to **PreStocks and Tessera recipes**. Same-origin
-`GET /api/recipes/inventory` loads the hackathon-documented catalogs:
+Scroll past Jupiter to **PreStocks recipes**. Same-origin
+`GET /api/recipes/inventory` loads only the hackathon-documented PreStocks
+catalog (`GET https://prestocks.com/api/prestocks`). Mints come from that
+payload (or from a labeled recorded copy). The UI never invents a mint, a fill,
+or a Pyth dollar from this rail.
 
-- PreStocks `GET https://prestocks.com/api/prestocks`
-- Tessera `GET https://rest-api.tessera.pe/v1/public/token-details`
+**PreStocks bounty eligibility:** this path is PreStocks-only. Non-PreStocks
+pre-IPO tokens, including Tessera, are **not** loaded into recipes. Tessera
+appears only as a related link-out, not as a recipe, swap, or basket mint.
 
-Mints come from those payloads (or from labeled recorded copies of them). The
-UI never invents a mint, a fill, or a Pyth dollar from this rail. PreStocks and
-Tessera stay on **separate** recipe lists.
+Badges:
 
-Badges per issuer:
+- **PRESTOCKS LIVE** — PreStocks API responded
+- **PRESTOCKS FIXTURE** — live path blocked or `STOCKLANA_RECIPE_SOURCE=fixture`;
+  recorded PreStocks catalog, labeled not live
+- **PRESTOCKS UNAVAILABLE** — empty; no invented rows
 
-- **PRESTOCKS LIVE** / **TESSERA LIVE** — issuer API responded
-- **PRESTOCKS FIXTURE** / **TESSERA FIXTURE** — live path blocked or
-  `STOCKLANA_RECIPE_SOURCE=fixture`; recorded catalog, labeled not live
-- **PRESTOCKS UNAVAILABLE** / **TESSERA UNAVAILABLE** — empty; no invented rows
-
-Select a 2–3 asset recipe. The panel is **Recipe preview (not a create, not a
-fill)**. Equal weights are the same `targetBps` helper used for local baskets.
-Localnet create is **N/A**: these mints are not on the validator, and Tessera
-docs list Token-2022 transfer-fee extensions that `create_basket` still rejects.
-Local create/deposit keeps using issued `USDCt` / `ALPHAt` / `BEACONt` /
-`CEDARt`. Issuer `tokenPrice` / `markPrice` fields are not shown and are not
-Pyth marks.
-
-Related: [PegLens](https://github.com/mpotter2002/peglens) link-outs the same
-issuers; this rail is the in-product recipe surface.
+Select a 2–3 asset PreStocks recipe. The panel is **PreStocks recipe preview
+(not a create, not a fill)**. Equal weights are the same `targetBps` helper
+used for local baskets. Localnet create is **N/A**: these mints are not on the
+validator. Local create/deposit keeps using issued `USDCt` / `ALPHAt` /
+`BEACONt` / `CEDARt`. Issuer `tokenPrice` / `markPrice` fields are not shown
+and are not Pyth marks.
 
 ### 6. UI and viewport
 
@@ -158,7 +154,8 @@ The choice is stored in `localStorage` as `stocklana.theme`.
 
 ### Out of this sitting
 
-- Creating a basket from PreStocks or Tessera mints on localnet
+- Creating a basket from PreStocks mints on localnet
+- Mixing Tessera or other non-PreStocks pre-IPO tokens into a PreStocks recipe
 - Treating a recipe preview, a Jupiter quote, or a spinner as a fill
 - Mainnet, funded live wallets, or a hosted deploy
 - Landing a Jupiter swap on localnet (quote/honest limits only; see
@@ -212,16 +209,16 @@ API, then search fallback). Route previews use `/api/jupiter/build`. Optional
 Jupiter is blocked; those rows are venue symbols, not Solana mints. Mock-swap
 stays the local-testing execution adapter (`anchor build -p basket -- --features local-testing`).
 
-PreStocks/Tessera recipes use same-origin `/api/recipes/inventory`. Optional:
+PreStocks recipes use same-origin `/api/recipes/inventory`. Optional:
 
 ```sh
 # STOCKLANA_RECIPE_SOURCE=auto   # auto | live | fixture
 # PRESTOCKS_API_URL=https://prestocks.com/api/prestocks
-# TESSERA_API_URL=https://rest-api.tessera.pe/v1/public/token-details
 ```
 
-`auto` tries each issuer API independently, then labeled recorded catalogs.
-`live` leaves a blocked issuer empty. `fixture` never calls the network.
+`auto` tries the PreStocks API, then a labeled recorded PreStocks catalog.
+`live` leaves the rail empty if PreStocks is blocked. `fixture` never calls the
+network. Tessera is not fetched.
 Jupiter CPI needs the documented v6 program and route AMMs on the same
 validator as the basket; a plain local validator will not land those swaps.
 
@@ -344,13 +341,14 @@ Implemented:
 - Jupiter Tokens API inventory for xStocks and indexes, plus `/swap/v2/build`
   quotes and an `execute_jupiter_leg` CPI instruction. Quotes are labeled as
   quotes, not fills. Localnet still cannot land Jupiter AMMs.
-- PreStocks and Tessera recipe previews from documented issuer catalogs (live
-  or labeled recorded fallback). Separate rails; not executable on localnet.
+- PreStocks recipe previews from the documented PreStocks catalog (live or
+  labeled recorded fallback). PreStocks-only; not executable on localnet.
 
 Not implemented: live Jupiter fills on the local validator, browser mock-leg
-execution, basket create from PreStocks/Tessera mints, basket closure, public
+execution, basket create from PreStocks mints, basket closure, public
 deployment, or funded live transactions. No real-world asset has been approved
-for execution.
+for execution. Tessera pre-IPO tokens are a related link-out only and are not
+part of the PreStocks recipe integration.
 
 Verified locally on September 15, 2026 with Rust 1.98.1, Agave 2.3.0, and
 Anchor 0.32.1. `Cargo.lock` intentionally pins several transitive crates to
@@ -362,15 +360,15 @@ versions compatible with Agave's SBF Rust 1.84 toolchain. See
 - `lib/`: TypeScript helpers, including Pyth quote parsing and bigint valuation.
 - `lib/jupiter/`: Jupiter inventory, `/build` parsing, and CPI remaining-account
   checks. Network calls stay in the same-origin API routes.
-- `lib/recipes/`: PreStocks and Tessera catalog parsers, equal-weight recipe
-  composition, and labeled recorded fallbacks.
+- `lib/recipes/`: PreStocks catalog parser, equal-weight PreStocks-only recipe
+  composition, and labeled recorded fallback.
 - `tests/*.test.ts`: Node's built-in test runner, no blockchain or wallet required.
 - `tests/fixtures/jupiter/`: recorded Tokens API and `/swap/v2/build` payloads.
 - `tests/integration/`: local-validator Anchor scenarios.
 - `programs/basket/`: personal basket custody and operation program.
 - `programs/mock-swap/`: local-only deterministic swap fixture.
 - `app/` and `components/`: local demonstration UI, including `/api/pyth/latest`,
-  the Jupiter rail, and the PreStocks/Tessera recipe rail.
+  the Jupiter rail, and the PreStocks recipe rail.
 - `lib/solana/`: typed local RPC, PDA, account decoding, instruction builders,
   local transaction submission, and injected-wallet boundaries.
 - `lib/pyth/`: official feed IDs, Hermes client, hermetic quotes, and holdings
