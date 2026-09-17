@@ -277,6 +277,215 @@
       ]
     },
     {
+      "name": "execute_jupiter_leg",
+      "discriminator": [
+        104,
+        223,
+        248,
+        248,
+        126,
+        9,
+        152,
+        39
+      ],
+      "accounts": [
+        {
+          "name": "owner",
+          "writable": true,
+          "signer": true,
+          "relations": [
+            "basket"
+          ]
+        },
+        {
+          "name": "basket",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  98,
+                  97,
+                  115,
+                  107,
+                  101,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "owner"
+              },
+              {
+                "kind": "account",
+                "path": "basket.basket_id",
+                "account": "BasketState"
+              }
+            ]
+          }
+        },
+        {
+          "name": "input_mint",
+          "writable": true
+        },
+        {
+          "name": "output_mint",
+          "writable": true
+        },
+        {
+          "name": "input_custody",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "basket"
+              },
+              {
+                "kind": "account",
+                "path": "input_token_program"
+              },
+              {
+                "kind": "account",
+                "path": "input_mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "output_custody",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "basket"
+              },
+              {
+                "kind": "account",
+                "path": "output_token_program"
+              },
+              {
+                "kind": "account",
+                "path": "output_mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "jupiter_program",
+          "address": "JUP6LkbZbjS1jKKwapdHNy74zcZ3tLUZoi5QNyVTaV4"
+        },
+        {
+          "name": "input_token_program"
+        },
+        {
+          "name": "output_token_program"
+        },
+        {
+          "name": "associated_token_program",
+          "address": "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "nonce",
+          "type": "u64"
+        },
+        {
+          "name": "leg_index",
+          "type": "u8"
+        },
+        {
+          "name": "input_amount",
+          "type": "u64"
+        },
+        {
+          "name": "data",
+          "type": "bytes"
+        }
+      ]
+    },
+    {
       "name": "execute_mock_leg",
       "discriminator": [
         82,
@@ -962,6 +1171,26 @@
       "code": 6028,
       "name": "UnsupportedMintExtension",
       "msg": "Mint extensions have not been approved for custody"
+    },
+    {
+      "code": 6029,
+      "name": "UnexpectedSwapProgram",
+      "msg": "Jupiter swap program is not the documented aggregator"
+    },
+    {
+      "code": 6030,
+      "name": "JupiterAccountsIncomplete",
+      "msg": "Jupiter remaining accounts omit basket custody or authority"
+    },
+    {
+      "code": 6031,
+      "name": "InvalidJupiterData",
+      "msg": "Jupiter instruction data is empty or too large"
+    },
+    {
+      "code": 6032,
+      "name": "UnexpectedSwapSigner",
+      "msg": "Jupiter remaining accounts include an unexpected signer"
     }
   ],
   "types": [

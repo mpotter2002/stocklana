@@ -4,6 +4,7 @@ use anchor_lang::prelude::*;
 
 pub mod errors;
 pub mod instructions;
+pub mod jupiter;
 pub mod mint_policy;
 pub mod state;
 
@@ -52,6 +53,16 @@ pub mod basket {
         legs: Vec<LegPlan>,
     ) -> Result<()> {
         handle_start_operation(ctx, expected_nonce, phase, expires_at_slot, legs)
+    }
+
+    pub fn execute_jupiter_leg<'info>(
+        ctx: Context<'_, '_, '_, 'info, ExecuteJupiterLeg<'info>>,
+        nonce: u64,
+        leg_index: u8,
+        input_amount: u64,
+        data: Vec<u8>,
+    ) -> Result<()> {
+        handle_execute_jupiter_leg(ctx, nonce, leg_index, input_amount, data)
     }
 
     #[cfg(feature = "local-testing")]

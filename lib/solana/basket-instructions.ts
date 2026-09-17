@@ -7,8 +7,13 @@ import {
   PublicKey,
   SystemProgram,
   TransactionInstruction,
+  type AccountMeta,
 } from "@solana/web3.js";
 import { equalWeights } from "../allocation.ts";
+import {
+  JUPITER_MAX_INSTRUCTION_DATA,
+  JUPITER_V6_PROGRAM_ID,
+} from "../jupiter/constants.ts";
 import {
   BASKET_PROGRAM_ID,
   MAX_U64,
@@ -81,6 +86,20 @@ export interface NoncedBasketParams {
   owner: PublicKey;
   basketId: bigint;
   nonce: bigint;
+}
+
+export interface ExecuteJupiterLegParams {
+  owner: PublicKey;
+  basketId: bigint;
+  nonce: bigint;
+  legIndex: number;
+  inputAmount: bigint;
+  inputMint: PublicKey;
+  inputTokenProgram: PublicKey;
+  outputMint: PublicKey;
+  outputTokenProgram: PublicKey;
+  remainingAccounts: AccountMeta[];
+  data: Uint8Array;
 }
 
 export class BasketInstructions {
@@ -209,6 +228,57 @@ export class BasketInstructions {
             min_output: toU64Bn(leg.minOutput),
           };
         }),
+      }),
+    });
+  }
+
+  static executeJupiterLeg(params: ExecuteJupiterLegParams): TransactionInstruction {
+    if (!Number.isInteger(params.legIndex) || params.legIndex < 0 || params.legIndex > 5) {
+      throw new Error("Leg index is outside the active operation");
+    }
+    assertPositiveAmount(params.inputAmount);
+    assertTokenProgram(params.inputTokenProgram);
+    assertTokenProgram(params.outputTokenProgram);
+    if (params.data.length === 0 || params.data.length > JUPITER_MAX_INSTRUCTION_DATA) {
+      throw new Error("Jupiter instruction data is empty or too large");
+    }
+    if (params.remainingAccounts.length === 0 || params.remainingAccounts.length > 64) {
+      throw new Error("Jupiter remaining accounts omit basket custody or authority");
+    }
+    const basket = deriveBasketAddress(params.owner, params.basketId);
+    return new TransactionInstruction({
+      programId: BASKET_PROGRAM_ID,
+      keys: [
+        writableSigner(params.owner),
+        writable(basket),
+        writable(params.inputMint),
+        writable(params.outputMint),
+        writable(TokenAccounts.custodyAddress(
+          params.inputMint,
+          basket,
+          params.inputTokenProgram,
+        )),
+        writable(TokenAccounts.custodyAddress(
+          params.outputMint,
+          basket,
+          params.outputTokenProgram,
+        )),
+        readonly(JUPITER_V6_PROGRAM_ID),
+        readonly(params.inputTokenProgram),
+        readonly(params.outputTokenProgram),
+        readonly(ASSOCIATED_TOKEN_PROGRAM_ID),
+        readonly(SystemProgram.programId),
+        ...params.remainingAccounts.map((account) => ({
+          pubkey: account.pubkey,
+          isSigner: account.isSigner,
+          isWritable: account.isWritable,
+        })),
+      ],
+      data: instructionCoder.encode("execute_jupiter_leg", {
+        nonce: toU64Bn(params.nonce),
+        leg_index: params.legIndex,
+        input_amount: toU64Bn(params.inputAmount),
+        data: Buffer.from(params.data),
       }),
     });
   }

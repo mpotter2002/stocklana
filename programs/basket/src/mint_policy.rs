@@ -55,8 +55,8 @@ mod tests {
             (vec![ExtensionType::ImmutableOwner], true),
             (vec![ExtensionType::TransferFeeAmount], false),
         ] {
-            let size = ExtensionType::try_calculate_account_len::<TokenAccount>(&extensions)
-                .unwrap();
+            let size =
+                ExtensionType::try_calculate_account_len::<TokenAccount>(&extensions).unwrap();
             let mut data = vec![0; size];
             let mut state =
                 StateWithExtensionsMut::<TokenAccount>::unpack_uninitialized(&mut data).unwrap();
@@ -80,7 +80,14 @@ mod tests {
             let key = Pubkey::new_unique();
             let mut lamports = 1;
             let account = AccountInfo::new(
-                &key, false, true, &mut lamports, &mut data, &token_2022::ID, false, 0,
+                &key,
+                false,
+                true,
+                &mut lamports,
+                &mut data,
+                &token_2022::ID,
+                false,
+                0,
             );
             assert_eq!(can_close_custody(&account).unwrap(), expected);
         }

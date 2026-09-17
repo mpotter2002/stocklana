@@ -1,0 +1,386 @@
+[
+  {
+    "id": "XsoCS1TfEyfFhfvj8EtZ528L3CaKBDBRqRapnBbDF2W",
+    "name": "SP500 xStock",
+    "symbol": "SPYx",
+    "decimals": 8,
+    "tokenProgram": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+    "isVerified": true,
+    "tags": [
+      "rwa",
+      "moonshot-verified",
+      "token-2022",
+      "verified",
+      "xstocks",
+      "stocks"
+    ],
+    "organicScore": 90.21462322952259,
+    "organicScoreLabel": "high"
+  },
+  {
+    "id": "XsueG8BtpquVJX9LVLLEGuViXUungE6WmK5YZ3p3bd1",
+    "name": "Circle xStock",
+    "symbol": "CRCLx",
+    "decimals": 8,
+    "tokenProgram": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+    "isVerified": true,
+    "tags": [
+      "token-2022",
+      "verified",
+      "xstocks",
+      "stocks",
+      "rwa",
+      "moonshot-verified"
+    ],
+    "organicScore": 84.43833559678922,
+    "organicScoreLabel": "high"
+  },
+  {
+    "id": "Xsc9qvGR1efVDFGLrVsmkzv3qi45LTBjeUKSPmx9qEh",
+    "name": "NVIDIA xStock",
+    "symbol": "NVDAx",
+    "decimals": 8,
+    "tokenProgram": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+    "isVerified": true,
+    "tags": [
+      "verified",
+      "xstocks",
+      "stocks",
+      "rwa",
+      "equities",
+      "moonshot-verified",
+      "token-2022"
+    ],
+    "organicScore": 81.86160912305391,
+    "organicScoreLabel": "high"
+  },
+  {
+    "id": "Xs8S1uUs1zvS2p7iwtsG3b6fkhpvmwz4GYU3gWAmWHZ",
+    "name": "Nasdaq xStock",
+    "symbol": "QQQx",
+    "decimals": 8,
+    "tokenProgram": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+    "isVerified": true,
+    "tags": [
+      "verified",
+      "xstocks",
+      "stocks",
+      "rwa",
+      "moonshot-verified",
+      "token-2022"
+    ],
+    "organicScore": 75.6068369498754,
+    "organicScoreLabel": "medium"
+  },
+  {
+    "id": "Xs3oZwbHvqis4NYcf4YKWmEia2eC84wSiVrcYcTqpH8",
+    "name": "SpaceX xStock",
+    "symbol": "SPCXx",
+    "decimals": 8,
+    "tokenProgram": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+    "isVerified": true,
+    "tags": [
+      "verified",
+      "stocks",
+      "rwa",
+      "xstocks",
+      "moonshot-verified",
+      "token-2022"
+    ],
+    "organicScore": 74.99417054666031,
+    "organicScoreLabel": "medium"
+  },
+  {
+    "id": "XsDoVfqeBukxuZHWhdvWHBhgEHjGNst4MLodqsJHzoB",
+    "name": "Tesla xStock",
+    "symbol": "TSLAx",
+    "decimals": 8,
+    "tokenProgram": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+    "isVerified": true,
+    "tags": [
+      "stocks",
+      "rwa",
+      "equities",
+      "moonshot-verified",
+      "token-2022",
+      "verified",
+      "xstocks"
+    ],
+    "organicScore": 75,
+    "organicScoreLabel": "medium"
+  },
+  {
+    "id": "Xsv9hRk1z5ystj9MhnA7Lq4vjSsLwzL2nxrwmwtD3re",
+    "name": "Gold xStock",
+    "symbol": "GLDx",
+    "decimals": 8,
+    "tokenProgram": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+    "isVerified": true,
+    "tags": [
+      "stocks",
+      "rwa",
+      "moonshot-verified",
+      "token-2022",
+      "verified",
+      "xstocks"
+    ],
+    "organicScore": 78.42032200887462,
+    "organicScoreLabel": "medium"
+  },
+  {
+    "id": "XsP7xzNPvEHS1m6qfanPUGjNmdnmsLKEoNAnHjdxxyZ",
+    "name": "MicroStrategy xStock",
+    "symbol": "MSTRx",
+    "decimals": 8,
+    "tokenProgram": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+    "isVerified": true,
+    "tags": [
+      "equities",
+      "moonshot-verified",
+      "token-2022",
+      "verified",
+      "xstocks",
+      "stocks",
+      "rwa"
+    ],
+    "organicScore": 70.48587375954222,
+    "organicScoreLabel": "medium"
+  },
+  {
+    "id": "XsqE9cRRpzxcGKDXj1BJ7Xmg4GRhZoyY1KpmGSxAWT2",
+    "name": "McDonald's xStock",
+    "symbol": "MCDx",
+    "decimals": 8,
+    "tokenProgram": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+    "isVerified": true,
+    "tags": [
+      "equities",
+      "token-2022",
+      "verified",
+      "xstocks",
+      "stocks",
+      "rwa"
+    ],
+    "organicScore": 74.0855295617287,
+    "organicScoreLabel": "medium"
+  },
+  {
+    "id": "XspzcW1PRtgf6Wj92HCiZdjzKCyFekVD8P5Ueh3dRMX",
+    "name": "Microsoft xStock",
+    "symbol": "MSFTx",
+    "decimals": 8,
+    "tokenProgram": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+    "isVerified": true,
+    "tags": [
+      "verified",
+      "xstocks",
+      "stocks",
+      "rwa",
+      "equities",
+      "token-2022"
+    ],
+    "organicScore": 72.52495840387604,
+    "organicScoreLabel": "medium"
+  },
+  {
+    "id": "XsvNBAYkrDRNhA7wPHQfX3ZUXZyZLdnCQDfHZ56bzpg",
+    "name": "Robinhood xStock",
+    "symbol": "HOODx",
+    "decimals": 8,
+    "tokenProgram": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+    "isVerified": true,
+    "tags": [
+      "moonshot-verified",
+      "token-2022",
+      "verified",
+      "xstocks",
+      "stocks",
+      "rwa",
+      "equities"
+    ],
+    "organicScore": 65.77712632279884,
+    "organicScoreLabel": "medium"
+  },
+  {
+    "id": "XsbEhLAtcf6HdfpFZ5xEMdqW8nfAvcsP5bdudRLJzJp",
+    "name": "Apple xStock",
+    "symbol": "AAPLx",
+    "decimals": 8,
+    "tokenProgram": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+    "isVerified": true,
+    "tags": [
+      "xstocks",
+      "stocks",
+      "rwa",
+      "equities",
+      "moonshot-verified",
+      "token-2022",
+      "verified"
+    ],
+    "organicScore": 70.03675937673073,
+    "organicScoreLabel": "medium"
+  },
+  {
+    "id": "Xsa62P5mvPszXL1krVUnU5ar38bBSVcWAB6fmPCo5Zu",
+    "name": "Meta xStock",
+    "symbol": "METAx",
+    "decimals": 8,
+    "tokenProgram": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+    "isVerified": true,
+    "tags": [
+      "equities",
+      "moonshot-verified",
+      "token-2022",
+      "verified",
+      "xstocks",
+      "stocks",
+      "rwa"
+    ],
+    "organicScore": 71.5876269412626,
+    "organicScoreLabel": "medium"
+  },
+  {
+    "id": "XsCPL9dNWBMvFtTmwcCA5v3xWPSMEBCszbQdiLLq6aN",
+    "name": "Alphabet xStock",
+    "symbol": "GOOGLx",
+    "decimals": 8,
+    "tokenProgram": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+    "isVerified": true,
+    "tags": [
+      "verified",
+      "xstocks",
+      "stocks",
+      "rwa",
+      "equities",
+      "moonshot-verified",
+      "token-2022"
+    ],
+    "organicScore": 66.81732963406752,
+    "organicScoreLabel": "medium"
+  },
+  {
+    "id": "XsoBhf2ufR8fTyNSjqfU71DYGaE6Z3SUGAidpzriAA4",
+    "name": "Palantir xStock",
+    "symbol": "PLTRx",
+    "decimals": 8,
+    "tokenProgram": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+    "isVerified": true,
+    "tags": [
+      "verified",
+      "xstocks",
+      "stocks",
+      "rwa",
+      "equities",
+      "token-2022"
+    ],
+    "organicScore": 68.6427203190368,
+    "organicScoreLabel": "medium"
+  },
+  {
+    "id": "Xs78JED6PFZxWc2wCEPspZW9kL3Se5J7L5TChKgsidH",
+    "name": "Strategy PP Variable xStock",
+    "symbol": "STRCx",
+    "decimals": 8,
+    "tokenProgram": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+    "isVerified": true,
+    "tags": [
+      "stocks",
+      "rwa",
+      "xstocks",
+      "token-2022",
+      "verified"
+    ],
+    "organicScore": 69.6765906123839,
+    "organicScoreLabel": "medium"
+  },
+  {
+    "id": "Xsf9mBktVB9BSU5kf4nHxPq5hCBJ2j2ui3ecFGxPRGc",
+    "name": "Gamestop xStock",
+    "symbol": "GMEx",
+    "decimals": 8,
+    "tokenProgram": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+    "isVerified": true,
+    "tags": [
+      "stocks",
+      "rwa",
+      "equities",
+      "token-2022",
+      "verified",
+      "xstocks"
+    ],
+    "organicScore": 61.541892401912776,
+    "organicScoreLabel": "medium"
+  },
+  {
+    "id": "Xs7ZdzSHLU9ftNJsii5fCeJhoRWSC32SQGzGQtePxNu",
+    "name": "Coinbase xStock",
+    "symbol": "COINx",
+    "decimals": 8,
+    "tokenProgram": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+    "isVerified": true,
+    "tags": [
+      "equities",
+      "moonshot-verified",
+      "token-2022",
+      "verified",
+      "xstocks",
+      "stocks",
+      "rwa"
+    ],
+    "organicScore": 60.195197531341535,
+    "organicScoreLabel": "medium"
+  },
+  {
+    "id": "Xs3eBt7uRfJX8QUs4suhyU8p2M6DoUDrJyWBa8LLZsg",
+    "name": "Amazon xStock",
+    "symbol": "AMZNx",
+    "decimals": 8,
+    "tokenProgram": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+    "isVerified": true,
+    "tags": [
+      "token-2022",
+      "verified",
+      "xstocks",
+      "stocks",
+      "rwa",
+      "equities",
+      "moonshot-verified"
+    ],
+    "organicScore": 65.89437345665155,
+    "organicScoreLabel": "medium"
+  },
+  {
+    "id": "XsfCC9VL4DamVGNgdJpfLXB3sBVa158Gbx8sh7NzmTk",
+    "name": "Vida Global xStock",
+    "symbol": "VIDAx",
+    "decimals": 8,
+    "tokenProgram": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+    "isVerified": true,
+    "tags": [
+      "stocks",
+      "xstocks",
+      "rwa",
+      "verified",
+      "token-2022"
+    ],
+    "organicScore": 74.74748065871391,
+    "organicScoreLabel": "medium"
+  },
+  {
+    "id": "XsBNz5UKYqcALjS5Xnm7HesMapyKLxkmfWPGHBek36x",
+    "name": "Franklin U.S. Equity Index xStock",
+    "symbol": "USPXx",
+    "decimals": 8,
+    "tokenProgram": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+    "isVerified": true,
+    "tags": [
+      "stocks",
+      "xstocks",
+      "rwa",
+      "verified",
+      "token-2022"
+    ],
+    "organicScore": 0,
+    "organicScoreLabel": "low"
+  }
+]

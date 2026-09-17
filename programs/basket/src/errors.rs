@@ -60,4 +60,12 @@ pub enum BasketError {
     InvalidMintAccount,
     #[msg("Mint extensions have not been approved for custody")]
     UnsupportedMintExtension,
+    #[msg("Jupiter swap program is not the documented aggregator")]
+    UnexpectedSwapProgram,
+    #[msg("Jupiter remaining accounts omit basket custody or authority")]
+    JupiterAccountsIncomplete,
+    #[msg("Jupiter instruction data is empty or too large")]
+    InvalidJupiterData,
+    #[msg("Jupiter remaining accounts include an unexpected signer")]
+    UnexpectedSwapSigner,
 }

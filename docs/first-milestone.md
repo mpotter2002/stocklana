@@ -26,12 +26,15 @@
 - Browser-visible checks for the local validator and deployed basket program.
 - Injected-wallet discovery, connection, disconnection, and account changes.
 - Typed local instruction builders for create, deposit, start, finish, exit,
-  and withdraw. The public client does not build mock-swap legs.
+  withdraw, and Jupiter legs. Mock-swap legs stay out of the public client.
 - Local-only wallet sign/send/confirm, with chain state re-read after
   confirmation. Wallet rejection, blockhash expiry, and program errors are
   surfaced in the UI.
 - Off-chain Pyth valuation for local test holdings. Hermes when a key is
   configured; otherwise labeled hermetic Pyth-format quotes.
+- Jupiter Tokens API inventory for xStocks and indexes, `/swap/v2/build` quote
+  parsing, and an on-chain `execute_jupiter_leg` CPI that constrains the
+  documented Jupiter v6 program, basket custody, spend, and minimum output.
 
 The onchain nonce and completed-leg state provide replay protection. The
 TypeScript recovery helper remains a presentation/client decision aid and is
@@ -45,6 +48,9 @@ not a substitute for those program checks.
 - Local test mints and USDCt balances are labeled test assets. Basket
   valuation uses Pyth quotes (Hermes or labeled local-test). Unmapped mints
   stay not priced; a missing feed is never filled with fixture dollars.
+- Jupiter catalog and `/build` quotes are labeled live-metadata / quote-only.
+  They are not fills and are not Pyth marks. Local test mints are not Jupiter
+  markets.
 - Default basket builds now exclude `local-testing`; only explicitly opted-in
   local builds contain mock execution. Follow the commands in README.md.
 - Creation now requires remaining accounts in exact order: funding mint, then
@@ -56,17 +62,18 @@ not a substitute for those program checks.
 - Empty custody accounts can be closed. Accounts with extensions other than
   ImmutableOwner are left open after transfer for separate rent cleanup.
 
-## Next: Jupiter Integration
+## Next: Jupiter CPI landing and recipe venues
 
-1. Prove one Jupiter `/build` CPI round trip under a permitted test setup using
-   actual response schemas and tightly constrained privileged accounts.
-2. Keep mock-swap evidence separate from Jupiter integration evidence, and do
-   not assume a live devnet xStocks market exists.
+1. A Jupiter CPI round trip still needs a permitted validator that hosts
+   Jupiter v6 and the route AMMs. Do not assume a live devnet xStocks market
+   exists. Keep mock-swap evidence separate from Jupiter evidence.
+2. Do not treat Jupiter `usdPrice` as a basket mark; valuation stays on Pyth.
 3. Add PreStocks/Tessera recipe options after a live-asset eligibility review.
 
 Local create, deposit, withdraw, and in-kind exit can now be signed in the
-browser against a local validator. Mock-leg execution and Jupiter remain out
-of the public client. Pyth valuation is display-only and independent of
+browser against a local validator. Jupiter inventory and `/build` quotes are
+in the public client. Jupiter buy/sell on localnet remains blocked until those
+programs are present. Pyth valuation is display-only and independent of
 in-kind recovery.
 
 ## Acceptance
@@ -75,7 +82,9 @@ An owner can deposit local SPL or plain Token-2022 fixtures, execute a
 recoverable multi-leg operation, retry a failed leg or supersede the operation,
 and fully withdraw the resulting holdings. Another owner cannot move the funds
 or substitute a destination. Browser-driven create/deposit/withdraw against
-localnet is in place. Jupiter buy/sell acceptance remains outstanding.
+localnet is in place. Jupiter inventory and `/build` quotes are in the public
+client; Jupiter buy/sell on localnet remains outstanding until the aggregator
+and AMMs are present.
 
 ## Design References
 

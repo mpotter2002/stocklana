@@ -49,10 +49,12 @@ import type { PythQuote } from "../lib/pyth/quote.ts";
 import type { PythQuoteSet } from "../lib/pyth/quote-service.ts";
 import { BasketValuation, type BasketValuationSnapshot } from "../lib/pyth/valuation.ts";
 import { LocalSolanaStatus } from "./local-solana-status";
+import { JupiterRail } from "./jupiter-rail";
 
 const UNKNOWN_RUNTIME: LocalRuntimeStatus = {
   validator: "offline",
   programDeployed: null,
+  jupiterSwapDeployed: null,
   slot: null,
   version: null,
 };
@@ -509,8 +511,10 @@ export function BasketWorkspace() {
             <span className="pr-4 text-xs font-semibold text-[var(--muted)]">USDCt</span>
           </div>
           <p className={`mt-2 min-h-5 text-xs ${amountError ? "text-[var(--red)]" : "text-[var(--muted)]"}`}>
-            {amountError || "Local test token, 6 decimals. Split below is a calculation only."}
+            {amountError || "Local test token, 6 decimals. Split below is a calculation only. Jupiter xStocks are listed separately and are not these mints."}
           </p>
+
+          <JupiterRail jupiterSwapDeployed={runtime.jupiterSwapDeployed} />
         </section>
 
         <aside className="bg-[#eef0ec] px-5 py-8 md:px-8 lg:px-6">
@@ -539,6 +543,7 @@ export function BasketWorkspace() {
               label="Basket"
               value={owner ? shortPublicKey(deriveBasketAddress(owner, DEFAULT_BASKET_ID)) : "--"}
             />
+            <PreviewRow label="Execution rail" value="Jupiter (quote only here)" />
             <PreviewRow label="Network" value="Local validator" />
             <PreviewRow
               label="Pyth source"
@@ -573,9 +578,10 @@ export function BasketWorkspace() {
               <button
                 className="inline-flex h-11 items-center justify-center rounded-[6px] border border-black/20 bg-white px-4 text-sm font-semibold disabled:opacity-50"
                 disabled
+                title="Jupiter CPI needs the Jupiter v6 program and route AMMs on this validator. Mock-swap stays in local-testing Anchor builds."
                 type="button"
               >
-                Mock/Jupiter later
+                Jupiter CPI unavailable locally
               </button>
             </div>
           ) : recovery.kind === "finish" ? (
@@ -870,7 +876,7 @@ function ChainPanel({
             <p className="mt-1 text-xs leading-5 text-[var(--muted)]">
               {snapshot
                 ? `PDA ${shortPublicKey(snapshot.address)}. ${recovery.kind === "prepare-leg"
-                  ? "A leg is open on chain. Browser mock/Jupiter execution is not wired; exit in kind to recover."
+                  ? "A leg is open on chain. Jupiter is the execution rail, but this local validator does not host Jupiter AMMs. Exit in kind, or use mock-swap in local-testing Anchor tests."
                   : recovery.kind === "finish"
                     ? "All legs are complete on chain. Finish the operation, then withdraw if needed."
                     : recovery.kind === "withdraw-holdings"

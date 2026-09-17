@@ -9,6 +9,7 @@ import {
   deriveBasketAddress,
   encodeU64LE,
 } from "../lib/solana/basket-client.ts";
+import { JUPITER_V6_PROGRAM_ID } from "../lib/jupiter/constants.ts";
 import { BasketInstructions } from "../lib/solana/basket-instructions.ts";
 import {
   ASSOCIATED_TOKEN_PROGRAM_ID,
@@ -201,6 +202,60 @@ test("start, finish, and exit encode nonces without exposing mock-swap accounts"
     expiresAtSlot: 1n,
     legs: [],
   }));
+});
+
+test("execute Jupiter leg encodes remaining swap accounts against the documented program", () => {
+  const basket = deriveBasketAddress(OWNER, 1n);
+  const data = Uint8Array.from([1, 2, 3, 4]);
+  const instruction = BasketInstructions.executeJupiterLeg({
+    owner: OWNER,
+    basketId: 1n,
+    nonce: 3n,
+    legIndex: 0,
+    inputAmount: 1_000_000n,
+    inputMint: FUNDING,
+    inputTokenProgram: TOKEN_PROGRAM_ID,
+    outputMint: ALPHA,
+    outputTokenProgram: TOKEN_PROGRAM_ID,
+    remainingAccounts: [
+      { pubkey: basket, isSigner: false, isWritable: false },
+      {
+        pubkey: TokenAccounts.custodyAddress(FUNDING, basket, TOKEN_PROGRAM_ID),
+        isSigner: false,
+        isWritable: true,
+      },
+      {
+        pubkey: TokenAccounts.custodyAddress(ALPHA, basket, TOKEN_PROGRAM_ID),
+        isSigner: false,
+        isWritable: true,
+      },
+    ],
+    data,
+  });
+  const decoded = coder.decode(Buffer.from(instruction.data));
+  assert.equal(decoded?.name, "execute_jupiter_leg");
+  assert.deepEqual([...instruction.data.subarray(0, 8)], [
+    104, 223, 248, 248, 126, 9, 152, 39,
+  ]);
+  assert.ok(instruction.keys[6]?.pubkey.equals(JUPITER_V6_PROGRAM_ID));
+  assert.equal(
+    JSON.stringify(instruction).includes("9Tk2Ss7nB1XGnGFttkJUtchexJXKVdVXHXQRcTim57rG"),
+    false,
+  );
+  assert.ok(instruction.keys.some((key) => key.pubkey.equals(basket) && !key.isSigner));
+  assert.throws(() => BasketInstructions.executeJupiterLeg({
+    owner: OWNER,
+    basketId: 1n,
+    nonce: 3n,
+    legIndex: 0,
+    inputAmount: 1_000_000n,
+    inputMint: FUNDING,
+    inputTokenProgram: TOKEN_PROGRAM_ID,
+    outputMint: ALPHA,
+    outputTokenProgram: TOKEN_PROGRAM_ID,
+    remainingAccounts: [],
+    data,
+  }), /remaining accounts/);
 });
 
 test("custody ATAs allow a PDA owner while wallet ATAs do not", () => {

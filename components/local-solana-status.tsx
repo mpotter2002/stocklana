@@ -30,6 +30,7 @@ type WalletStatus =
 const UNKNOWN_RUNTIME: LocalRuntimeStatus = {
   validator: "offline",
   programDeployed: null,
+  jupiterSwapDeployed: null,
   slot: null,
   version: null,
 };
@@ -163,7 +164,7 @@ export function LocalSolanaStatus({
   return (
     <section className="border-b border-black/10 bg-[#edf2f0]">
       <div className="mx-auto flex max-w-[1440px] flex-col gap-4 px-5 py-4 md:px-8 lg:flex-row lg:items-center lg:justify-between">
-        <div className="grid flex-1 grid-cols-1 gap-3 sm:grid-cols-3">
+        <div className="grid flex-1 grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <StatusItem
             label="Local validator"
             state={
@@ -181,6 +182,25 @@ export function LocalSolanaStatus({
               checking ? "checking" : runtime.programDeployed ? "ok" : "warn"
             }
             value={programValue}
+          />
+          <StatusItem
+            label="Jupiter v6"
+            state={
+              checking
+                ? "checking"
+                : runtime.jupiterSwapDeployed
+                  ? "ok"
+                  : "warn"
+            }
+            value={
+              checking
+                ? "Checking"
+                : runtime.jupiterSwapDeployed === true
+                  ? "Deployed"
+                  : runtime.validator === "online"
+                    ? "Not on localnet"
+                    : "Unchecked"
+            }
           />
           <StatusItem
             label="Browser wallet"
