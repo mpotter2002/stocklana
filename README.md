@@ -2,12 +2,136 @@
 
 Custom tokenized-stock baskets. Local foundation, not a live trading product.
 
+## How to test the prototype
+
+One sitting for Michael: local create/deposit, Pyth display quotes, the Jupiter
+inventory/quote rail, and a usable UI. This is **localnet only**. There is no
+hosted demo URL and no mainnet path.
+
+### Before you start
+
+- Node.js 24+, Solana CLI, Anchor CLI, and a browser with an injected Solana
+  wallet (Phantom, Solflare, Backpack, or similar).
+- Point that wallet at **Localnet** `http://127.0.0.1:8899` **before** connecting.
+  The UI refuses any other RPC.
+- A Hermes / Pyth API key is **optional**. Without it the UI still prices local
+  test mints with labeled hermetic quotes. Same for `JUPITER_API_KEY`: the rail
+  should load unauthenticated (rate-limited). Copy `.env.example` to gitignored
+  `.env.local` only if you want those keys, then restart `npm run dev`.
+
+### 1. Validator → deploy → UI
+
+Two terminals. Copy the commands from **Run** below: `solana-test-validator
+--reset` in the first; `anchor build` (basket with `local-testing`, then
+mock-swap), `anchor deploy`, `npm ci`, `npm run dev` in the second.
+
+Open `http://127.0.0.1:3000`. Header chips should settle to:
+
+- `LOCAL TEST`
+- Validator **Online** (slot number)
+- Program **Deployed**
+- Jupiter v6 **Not on localnet** — expected on a plain `solana-test-validator`
+- Wallet **Ready** once the extension is detected, otherwise **Not detected**
+
+If Program stays **Not deployed**, do not click through. Re-run the Terminal 2
+build and deploy. A spinner is not proof the program is live.
+
+### 2. Connect, issue test mints, create and deposit
+
+These are real browser transactions against the local validator. After every
+submit the UI waits for a confirmed signature and re-reads basket and token
+accounts from RPC. Decline a wallet prompt and the UI must report failure, not
+fixture success.
+
+1. Click **Connect wallet**. Approve in the extension. The wallet chip shows a
+   shortened address.
+2. Ticket primary: **Issue local test tokens**. Approve. The first issue also
+   airdrops SOL if the wallet is below 1 SOL. After confirmation you should see
+   labeled local mints `USDCt`, `ALPHAt`, `BEACONt`, `CEDARt` — created on this
+   validator, not taken from fixtures. Jupiter xStocks are a separate rail and
+   are not these mints.
+3. Select two or three assets. Leave or edit **Deposit** (USDCt). Ticket primary
+   becomes **Create and deposit**. Approve. After confirmation:
+   - **Open baskets** shows `1` with an **On chain** badge
+   - **Basket custody** and **Wallet USDCt** update from RPC
+   - Ticket shows `Phase idle`, a PDA, and a signature
+4. Optional in the same sitting: **Deposit** more USDCt, then **Withdraw
+   holdings**. Custody and wallet balances must move only after confirmation.
+
+### 3. Pyth valuation
+
+Look at **Valuation** (headline + hint) and the holdings **Quote** column. Those
+dollars come from Pyth quotes, never from invented fixture prices.
+
+- **No Hermes key** (the default): heading **Pyth local test quotes**, ticket
+  **Pyth source: Local test**. Round hermetic marks are expected (`USDC` $1,
+  `AAPL` $100, `MSFT` $200, `GOOGL` $50) and labeled as not live marks.
+- **With `PYTH_API_KEY`**: ticket **Pyth source: Hermes**, heading **Pyth Hermes
+  quotes**. Restart `npm run dev` after adding the key.
+- Unmapped or failed feeds stay **Not priced**. An incomplete basket can show a
+  **Partial** total. Reference quotes can appear before a wallet is connected.
+
+Valuation is off-chain display only. This repo does not clone Pyth accounts onto
+the local validator and does not do an on-chain Pyth CPI.
+
+### 4. Jupiter inventory / quote rail
+
+Scroll to **Jupiter xStocks and indexes**. Catalog and `/build` quotes load
+independently of local test mints.
+
+Source badge:
+
+- **JUPITER LIVE** — Tokens API catalog loaded (indexes and xStocks listed)
+- **JUPITER BLOCKED** — Jupiter unreachable; the UI will not invent mints
+- **BACKPACK BACKUP** — Jupiter blocked; venue symbols only, no Solana mints
+
+Then:
+
+1. Confirm the rail says Jupiter v6 on this validator is **not present — CPI
+   cannot land here**.
+2. Select an index or xStock, enter a quote amount, click **Preview Jupiter
+   route**.
+3. A successful preview is labeled **Jupiter quote (not a fill)**. Min out is
+   `otherAmountThreshold`, not a landed swap. Ticket **Execution rail** reads
+   `Jupiter (quote only here)`.
+
+**Localnet Jupiter CPI is N/A.** A plain validator does not host Jupiter v6 or
+route AMMs, so a swap will not land here. Quotes are not fills. If a basket were
+mid-operation, recovery is **Begin exit** then **Withdraw in kind** — in-kind
+exit does not depend on Jupiter or Pyth.
+
+### 5. UI and viewport
+
+The brokerage layout (header status, valuation, holdings, ticket, Jupiter rail)
+should be usable on a desktop window.
+
+Narrow to about **390px** and check:
+
+- Header chips wrap; refresh stays with the wallet actions
+- Pyth quote rows stack so prices do not overlap symbols
+- Jupiter inventory status URLs wrap; lists stay readable
+- No horizontal overflow
+
+**Appearance:** the shipped UI is **light mode**. Dark-mode CSS tokens exist on
+shadcn primitives, but there is no theme toggle on `main` yet — dark mode is in
+flight.
+
+### Out of this sitting
+
+- PreStocks / Tessera recipe options
+- Mainnet, funded live wallets, or a hosted deploy
+- Landing a Jupiter swap on localnet
+
+TypeScript checks without a validator: `npm run check`. Rust / Anchor tests are
+separate (`cargo test --workspace`, `anchor test --skip-build`).
+
 ## Run
 
 Requires Node.js 24 or newer.
 
 Point an injected Solana wallet at **Localnet** `http://127.0.0.1:8899`
 before connecting. The UI only submits transactions to that loopback RPC.
+The one-sitting walkthrough is **How to test the prototype** above.
 
 ```sh
 # Terminal 1: local validator
