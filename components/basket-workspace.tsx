@@ -32,6 +32,7 @@ import { LocalTestFeedMap } from "../lib/pyth/local-test-map.ts";
 import type { PythQuoteSet } from "../lib/pyth/quote-service.ts";
 import { BasketView } from "../lib/ui/basket-view.ts";
 import { HoldingsPanel } from "./holdings-panel";
+import { JupiterRail } from "./jupiter-rail";
 import { LocalSolanaStatus } from "./local-solana-status";
 import { OrderTicket, type ChainNotice } from "./order-ticket";
 import { PortfolioSummary } from "./portfolio-summary";
@@ -39,6 +40,7 @@ import { PortfolioSummary } from "./portfolio-summary";
 const UNKNOWN_RUNTIME: LocalRuntimeStatus = {
   validator: "offline",
   programDeployed: null,
+  jupiterSwapDeployed: null,
   slot: null,
   version: null,
 };
@@ -378,20 +380,23 @@ export function BasketWorkspace() {
         />
 
         <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-start">
-          <HoldingsPanel
-            amount={amount}
-            amountError={amountError}
-            listedAssets={listedAssets}
-            onAmountChange={setAmount}
-            onToggleAsset={toggleAsset}
-            quoteSource={quoteSet?.source ?? null}
-            quotes={quotes}
-            quotesLoading={quotesLoading}
-            selected={selected}
-            selectedAssets={selectedAssets}
-            snapshotLocked={snapshotLocked}
-            weights={weights}
-          />
+          <div className="flex flex-col gap-8">
+            <HoldingsPanel
+              amount={amount}
+              amountError={amountError}
+              listedAssets={listedAssets}
+              onAmountChange={setAmount}
+              onToggleAsset={toggleAsset}
+              quoteSource={quoteSet?.source ?? null}
+              quotes={quotes}
+              quotesLoading={quotesLoading}
+              selected={selected}
+              selectedAssets={selectedAssets}
+              snapshotLocked={snapshotLocked}
+              weights={weights}
+            />
+            <JupiterRail jupiterSwapDeployed={runtime.jupiterSwapDeployed} />
+          </div>
           <OrderTicket
             allocations={allocations}
             balances={balances}

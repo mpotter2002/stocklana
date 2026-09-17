@@ -202,6 +202,7 @@ export function HoldingsPanel({
           ) : (
             <FieldDescription>
               Local test token, 6 decimals. Split below is a calculation only.
+              Jupiter xStocks are listed separately and are not these mints.
             </FieldDescription>
           )}
         </Field>

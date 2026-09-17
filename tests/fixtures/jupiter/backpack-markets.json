@@ -1,0 +1,38 @@
+[
+  {
+    "symbol": "SPCX.US_USDC",
+    "baseSymbol": "SPCX.US",
+    "quoteSymbol": "USDC",
+    "marketType": "SPOT",
+    "rwaMarketType": "STOCK",
+    "visible": true,
+    "orderBookState": "Open"
+  },
+  {
+    "symbol": "MU.US_USDC",
+    "baseSymbol": "MU.US",
+    "quoteSymbol": "USDC",
+    "marketType": "SPOT",
+    "rwaMarketType": "STOCK",
+    "visible": true,
+    "orderBookState": "Open"
+  },
+  {
+    "symbol": "SNDK.US_USDC",
+    "baseSymbol": "SNDK.US",
+    "quoteSymbol": "USDC",
+    "marketType": "SPOT",
+    "rwaMarketType": "STOCK",
+    "visible": true,
+    "orderBookState": "Open"
+  },
+  {
+    "symbol": "SOL_USDC",
+    "baseSymbol": "SOL",
+    "quoteSymbol": "USDC",
+    "marketType": "SPOT",
+    "rwaMarketType": null,
+    "visible": true,
+    "orderBookState": "Open"
+  }
+]

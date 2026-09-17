@@ -38,6 +38,7 @@ type WalletStatus =
 const UNKNOWN_RUNTIME: LocalRuntimeStatus = {
   validator: "offline",
   programDeployed: null,
+  jupiterSwapDeployed: null,
   slot: null,
   version: null,
 };
@@ -180,6 +181,25 @@ export function LocalSolanaStatus({
         label="Program"
         state={checking ? "checking" : runtime.programDeployed ? "ok" : "warn"}
         value={programValue}
+      />
+      <StatusChip
+        label="Jupiter v6"
+        state={
+          checking
+            ? "checking"
+            : runtime.jupiterSwapDeployed
+              ? "ok"
+              : "warn"
+        }
+        value={
+          checking
+            ? "Checking"
+            : runtime.jupiterSwapDeployed === true
+              ? "Deployed"
+              : runtime.validator === "online"
+                ? "Not on localnet"
+                : "Unchecked"
+        }
       />
       <div className="flex items-center gap-2">
         <StatusChip

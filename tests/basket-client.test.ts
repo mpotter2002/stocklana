@@ -110,6 +110,7 @@ test("local runtime inspection distinguishes deployment and outage", async () =>
   assert.deepEqual(deployed, {
     validator: "online",
     programDeployed: true,
+    jupiterSwapDeployed: false,
     slot: 42,
     version: "2.3.0",
   });

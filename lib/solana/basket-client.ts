@@ -1,3 +1,4 @@
+import { JUPITER_V6_PROGRAM_ID } from "../jupiter/constants.ts";
 import type { Idl } from "@coral-xyz/anchor";
 import { BorshAccountsCoder } from "@coral-xyz/anchor/dist/browser/index.js";
 import {
@@ -82,6 +83,7 @@ export interface BasketSnapshot {
 export interface LocalRuntimeStatus {
   validator: "online" | "offline";
   programDeployed: boolean | null;
+  jupiterSwapDeployed: boolean | null;
   slot: number | null;
   version: string | null;
 }
@@ -214,16 +216,18 @@ export async function inspectLocalRuntime(
 ): Promise<LocalRuntimeStatus> {
   try {
     const version = await withTimeout(connection.getVersion(), timeoutMs);
-    const [slot, program] = await withTimeout(
+    const [slot, program, jupiter] = await withTimeout(
       Promise.all([
         connection.getSlot("confirmed"),
         connection.getAccountInfo(BASKET_PROGRAM_ID, "confirmed"),
+        connection.getAccountInfo(JUPITER_V6_PROGRAM_ID, "confirmed"),
       ]),
       timeoutMs,
     );
     return {
       validator: "online",
       programDeployed: program?.executable === true,
+      jupiterSwapDeployed: jupiter?.executable === true,
       slot,
       version: version["solana-core"],
     };
@@ -231,6 +235,7 @@ export async function inspectLocalRuntime(
     return {
       validator: "offline",
       programDeployed: null,
+      jupiterSwapDeployed: null,
       slot: null,
       version: null,
     };

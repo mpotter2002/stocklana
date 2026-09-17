@@ -98,6 +98,7 @@ export function OrderTicket({
           <TicketRow label="Assets" value={`${selectedAssets.length}`} />
           <TicketRow label="Weighting" value="Equal" />
           <TicketRow label="Basket" value={basketAddress} />
+          <TicketRow label="Execution rail" value="Jupiter (quote only here)" />
           <TicketRow label="Network" value="Local validator" />
           <TicketRow label="Pyth source" value={pythSource} />
         </dl>
@@ -120,8 +121,13 @@ export function OrderTicket({
             >
               Begin exit
             </Button>
-            <Button disabled type="button" variant="outline">
-              Mock/Jupiter later
+            <Button
+              disabled
+              title="Jupiter CPI needs the Jupiter v6 program and route AMMs on this validator. Mock-swap stays in local-testing Anchor builds."
+              type="button"
+              variant="outline"
+            >
+              Jupiter CPI unavailable locally
             </Button>
           </div>
         ) : recovery.kind === "finish" ? (
@@ -214,7 +220,7 @@ function ChainPanel({
         <AlertDescription>
           {snapshot
             ? `PDA ${shortPublicKey(snapshot.address)}. ${recovery.kind === "prepare-leg"
-              ? "A leg is open on chain. Browser mock/Jupiter execution is not wired; exit in kind to recover."
+              ? "A leg is open on chain. Jupiter is the execution rail, but this local validator does not host Jupiter AMMs. Exit in kind, or use mock-swap in local-testing Anchor tests."
               : recovery.kind === "finish"
                 ? "All legs are complete on chain. Finish the operation, then withdraw if needed."
                 : recovery.kind === "withdraw-holdings"

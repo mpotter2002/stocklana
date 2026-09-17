@@ -1,6 +1,7 @@
 pub mod begin_exit;
 pub mod create_basket;
 pub mod deposit;
+pub mod execute_jupiter_leg;
 #[cfg(feature = "local-testing")]
 pub mod execute_mock_leg;
 pub mod finish_operation;
@@ -10,6 +11,7 @@ pub mod withdraw_full;
 pub use begin_exit::*;
 pub use create_basket::*;
 pub use deposit::*;
+pub use execute_jupiter_leg::*;
 #[cfg(feature = "local-testing")]
 pub use execute_mock_leg::*;
 pub use finish_operation::*;

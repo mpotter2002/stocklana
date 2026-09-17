@@ -33,10 +33,11 @@ client's camelCase fields and lowercase phase union.
 
 - Browser create/deposit/withdraw/exit submit only to the local validator.
 - The public instruction client does not build mock-swap legs.
-- No Jupiter request or CPI path exists yet.
+- Jupiter inventory, `/swap/v2/build` quotes, and `execute_jupiter_leg` are in
+  the public client. Quotes are not fills. Localnet still lacks Jupiter AMMs.
 - Pyth valuation is off-chain display via Hermes or labeled local-test quotes.
   There is no on-chain Pyth receiver integration yet.
-- No mainnet/devnet deployment or live asset address is configured.
+- No mainnet/devnet deployment or live asset execution is configured.
 - The mock-swap program remains local-only.
 
 ## Review Risks
