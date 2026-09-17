@@ -29,17 +29,20 @@ Say the limit out loud when it is on screen (localnet, quote not a fill, stand-i
 | 7 | Pyth | **Valuation** + holdings **Quote** + ticket **Pyth source** | Dollars are Pyth quotes. Local-test marks are labeled. Missing feeds stay not priced. |
 | 8 | Jupiter | **Jupiter xStocks and indexes**, **JUPITER LIVE**, v6 **not present — CPI cannot land here** | Catalog is live metadata. This validator cannot land the CPI. |
 | 9 | Quote | **Preview Jupiter route** → **Jupiter quote (not a fill)** | Min out is `otherAmountThreshold`. Ticket rail: `Jupiter (quote only here)`. |
-| 10 | Optional recover | **Withdraw holdings** (or **Begin exit** then **Withdraw in kind** if mid-operation) | In-kind exit does not need Jupiter or Pyth. |
+| 10 | Recipes | **PreStocks recipes**, LIVE or FIXTURE badge | PreStocks-only catalog. Preview is not a create. Tessera is a link-out, not a recipe. |
+| 11 | Recipe preview | Select OpenAI + Anthropic | Localnet create N/A. Not Pyth. Not a fill. Prestocks-only. |
+| 12 | Optional recover | **Withdraw holdings** (or **Begin exit** then **Withdraw in kind** if mid-operation) | In-kind exit does not need Jupiter or Pyth. |
 
-Skip shots 4–6 only if you cannot show a wallet; then say so and still show Pyth + Jupiter honesty (shots 7–9).
+Skip shots 4–6 only if you cannot show a wallet; then say so and still show Pyth + Jupiter + recipe honesty (shots 7–11).
 
 ## Do not
 
 - Call the quote a fill, a buy, or “Jupiter working on localnet”
 - Show mainnet, a funded live wallet, or a claimed hosted URL
-- Name PreStocks / Tessera as if they are in this build
+- Call a PreStocks recipe preview a live basket or a fill
+- Show Tessera tokens as part of the PreStocks bounty recipe path
 - Leave a spinner up and call the trade done
-- Zoom past **Not priced**, **JUPITER BLOCKED**, or **Not on localnet** as if they were errors to hide
+- Zoom past **Not priced**, **JUPITER BLOCKED**, **FIXTURE**, **UNAVAILABLE**, or **Not on localnet** as if they were errors to hide
 
 ## After record
 
