@@ -357,17 +357,17 @@ export function BasketWorkspace() {
     <main className="min-h-screen">
       <header className="border-b bg-card">
         <div className="mx-auto flex max-w-6xl flex-col gap-3 px-5 py-3 md:flex-row md:items-center md:justify-between md:px-8">
-          <div className="flex items-baseline gap-3">
-            <p className="font-heading text-2xl italic tracking-tight">Stocklana</p>
-            <p className="text-sm text-muted-foreground">Custom baskets</p>
-          </div>
-          <div className="flex flex-wrap items-center justify-end gap-2">
-            <LocalSolanaStatus
-              onOwnerChange={handleOwnerChange}
-              onRuntimeChange={setRuntime}
-            />
+          <div className="flex w-full items-center justify-between gap-3 md:w-auto">
+            <div className="flex items-baseline gap-3">
+              <p className="font-heading text-2xl italic tracking-tight">Stocklana</p>
+              <p className="text-sm text-muted-foreground">Custom baskets</p>
+            </div>
             <ThemeToggle />
           </div>
+          <LocalSolanaStatus
+            onOwnerChange={handleOwnerChange}
+            onRuntimeChange={setRuntime}
+          />
         </div>
       </header>
 
