@@ -33,6 +33,7 @@ import type { PythQuoteSet } from "../lib/pyth/quote-service.ts";
 import { BasketView } from "../lib/ui/basket-view.ts";
 import { HoldingsPanel } from "./holdings-panel";
 import { JupiterRail } from "./jupiter-rail";
+import { RecipeRail } from "./recipe-rail";
 import { LocalSolanaStatus } from "./local-solana-status";
 import { OrderTicket, type ChainNotice } from "./order-ticket";
 import { PortfolioSummary } from "./portfolio-summary";
@@ -400,6 +401,7 @@ export function BasketWorkspace() {
               weights={weights}
             />
             <JupiterRail jupiterSwapDeployed={runtime.jupiterSwapDeployed} />
+            <RecipeRail />
           </div>
           <OrderTicket
             allocations={allocations}

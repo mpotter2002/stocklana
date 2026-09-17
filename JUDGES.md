@@ -18,8 +18,7 @@ Why this belongs on Solana rather than a ported web app:
 - Browser-signed transactions against a local validator, with a confirmed signature and an RPC re-read before the UI treats the action as done.
 - **Pyth** for off-chain holdings valuation (Hermes when a key is set; otherwise labeled local-test quotes). Missing feeds stay **Not priced**.
 - **Jupiter** as the xStocks / index inventory and `/swap/v2/build` quote rail. Quotes are labeled as quotes, not fills.
-
-This build does **not** include PreStocks or Tessera recipe options.
+- **PreStocks / Tessera** as separate recipe-preview rails from documented issuer catalogs. Previews are not creates, not fills, and not Pyth marks. Localnet create stays on issued test mints.
 
 ## How to run
 
@@ -45,6 +44,7 @@ TypeScript without a validator: `npm run check`. Rust / Anchor tests are separat
 | Pyth | Display quotes; **Pyth local test** without a key; **Pyth Hermes** with `PYTH_API_KEY` | On-chain Pyth CPI or cloned Pyth accounts |
 | Jupiter | Tokens API catalog + `/build` quote labeled **Jupiter quote (not a fill)** | A landed swap on this validator |
 | Jupiter v6 chip | **Not on localnet** on a plain `solana-test-validator` | A bug; CPI cannot land here |
+| PreStocks / Tessera | Recipe preview from issuer catalog or labeled **FIXTURE**; empty if **UNAVAILABLE** | A localnet create, a fill, or a Pyth mark |
 | Recovery | **Begin exit** then **Withdraw in kind** | A Jupiter- or Pyth-dependent unwind |
 | UI progress | Spinner / ticket text | Proof a trade landed — re-read chain first |
 
@@ -60,13 +60,14 @@ After the header chips look healthy:
 4. Select two or three assets. Leave or edit **Deposit** (USDCt). **Create and deposit** — approve. After confirmation: **Open baskets** `1` with **On chain**, **Basket custody** and **Wallet USDCt** update from RPC, ticket shows `Phase idle`, a PDA, and a signature.
 5. **Pyth** — **Valuation** headline + hint, holdings **Quote** column. Without a key: heading **Pyth local test quotes**, ticket **Pyth source: Local test**, round hermetic marks (`USDC` $1, `AAPL` $100, `MSFT` $200, `GOOGL` $50) labeled as not live markets. Unmapped feeds stay **Not priced**.
 6. **Jupiter rail** — scroll to **Jupiter xStocks and indexes**. Badge **JUPITER LIVE** when the Tokens API catalog loaded (or **JUPITER BLOCKED** / **BACKPACK BACKUP** if Jupiter is unreachable — the UI will not invent mints). Confirm the v6 line is **not present — CPI cannot land here**. Select an index or xStock, enter a quote amount, **Preview Jupiter route**. Success is labeled **Jupiter quote (not a fill)**.
-7. Optional in the same sitting: **Deposit** more USDCt, then **Withdraw holdings**. Balances move only after confirmation.
+7. **Recipe rail** — scroll to **PreStocks and Tessera recipes**. Badges **PRESTOCKS LIVE** / **TESSERA LIVE** when the documented issuer APIs respond, or **FIXTURE** / **UNAVAILABLE**. Select a PreStocks recipe and a Tessera recipe separately. Success is labeled **Recipe preview (not a create, not a fill)**. Localnet create stays **N/A**. Do not mix the two issuers in one recipe.
+8. Optional in the same sitting: **Deposit** more USDCt, then **Withdraw holdings**. Balances move only after confirmation.
 
 Decline a wallet prompt and the UI must report failure, not fixture success.
 
 ## Out of this sitting
 
-- PreStocks / Tessera
+- Creating a PreStocks or Tessera basket on this validator
 - Mainnet, funded live wallets, or a hosted deploy
 - Landing a Jupiter swap on localnet
-- Treating a quote, a spinner, or a Pyth dollar as an on-chain fill
+- Treating a quote, a recipe preview, a spinner, or a Pyth dollar as an on-chain fill
