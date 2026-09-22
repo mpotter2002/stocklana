@@ -127,4 +127,16 @@ test("local runtime inspection distinguishes deployment and outage", async () =>
   );
   assert.equal(offline.validator, "offline");
   assert.equal(offline.programDeployed, null);
+
+  const started = Date.now();
+  const hung = await inspectLocalRuntime(
+    {
+      getVersion: () => new Promise(() => {}),
+      getSlot: async () => 0,
+      getAccountInfo: async () => null,
+    },
+    40,
+  );
+  assert.equal(hung.validator, "offline");
+  assert.ok(Date.now() - started < 400);
 });
