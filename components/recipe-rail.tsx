@@ -5,7 +5,7 @@ import { PublicKey } from "@solana/web3.js";
 import { useCallback, useEffect, useState } from "react";
 import { shortPublicKey } from "../lib/solana/injected-wallet";
 import {
-  PEGLENS_RELATED_URL,
+  XSTOCKLENS_RELATED_URL,
   PRESTOCKS_PRODUCTS_URL,
   TESSERA_RELATED_URL,
 } from "../lib/recipes/constants.ts";
@@ -202,8 +202,8 @@ export function RecipeRail() {
             prestocks.com/products
           </a>
           . Related (not this bounty path):{" "}
-          <a className="underline underline-offset-3" href={PEGLENS_RELATED_URL} rel="noreferrer" target="_blank">
-            PegLens
+          <a className="underline underline-offset-3" href={XSTOCKLENS_RELATED_URL} rel="noreferrer" target="_blank">
+            xStockLens
           </a>
           {", "}
           <a className="underline underline-offset-3" href={TESSERA_RELATED_URL} rel="noreferrer" target="_blank">

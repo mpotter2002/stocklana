@@ -3,7 +3,7 @@ export const PRESTOCKS_API_URL = "https://prestocks.com/api/prestocks";
 
 export const RECIPE_FETCH_TIMEOUT_MS = 8_000;
 
-export const PEGLENS_RELATED_URL = "https://github.com/mpotter2002/peglens";
+export const XSTOCKLENS_RELATED_URL = "https://github.com/mpotter2002/xstocklens";
 export const PRESTOCKS_PRODUCTS_URL = "https://prestocks.com/products";
 
 /**
