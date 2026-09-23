@@ -41,6 +41,7 @@ type CatalogPayload = {
   catalogLabel: "live" | "blocked";
   usedSearchFallback: boolean;
   detail: string;
+  cache?: { status: "miss" | "hit" | "stale"; fetchedAt: number; ageSeconds: number };
   funding: {
     mint: string;
     symbol: string;
@@ -125,6 +126,7 @@ export function JupiterRail({
 
   const sourceBadge = useMemo(() => {
     if (!catalog) return "UNCHECKED";
+    if (catalog.source === "jupiter" && catalog.cache?.status === "stale") return "JUPITER CACHED";
     if (catalog.source === "jupiter" && catalog.catalogLabel === "live") return "JUPITER LIVE";
     if (catalog.source === "backpack-backup") return "BACKPACK BACKUP";
     return "JUPITER BLOCKED";
